@@ -22,6 +22,7 @@ random_seed    <- 34590347
 # sbp: systolic blood pressure
 # hct: hematocrit, %
 # creatinine: serum creatinine
+# risk: low risk syncope = 0
 
 
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
