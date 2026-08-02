@@ -1,7 +1,7 @@
 # Assign SCAI cardiogenic shock stage using data from the first 24 hours
 # after ICU admission.
 #
-# Jason Silva-Rudberg
+# Jason Silva-Rudberg (Limited English Proficiency and End-of-Life Decision-Making Among Patients with Cardiogenic Shock in the Cardiac Intensive Care Unit)
 #
 # Usage:
 #   python scai_calculator.py -i input.xlsx -o scai_output.xlsx
