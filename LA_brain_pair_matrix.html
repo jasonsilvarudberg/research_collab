@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LA–Brain Exposure–Outcome Pair Matrix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Sans+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one column per exposure→outcome pair; each cell is a single glyph for the fully adjusted result, with the six primary-model pairs first. */
+:root{
+  --ink:#16213a; --ink-soft:#56617a; --page:#f6f7fa; --surface:#ffffff; --line:#d5dbe6; --line-strong:#b7c0d1;
+  --navy:#1b2a5c; --core:#fff7e0; --core-head:#f2c94c; --core-ink:#3d2e00;
+  --teal:#1a8f84; --teal-sub:#cdebe7; --purple:#6a3ea1; --purple-sub:#e3d7f2; --blue:#2b7fd4; --blue-sub:#d3e6f8;
+  --muted-head:#e9ecf2;
+  --assoc:#2f9e44; --mixed:#e8a317; --null:#9aa3b2; --unadj:#9aa3b2;
+  --pop-bg:#ffffff; --pop-shadow:0 12px 32px rgba(18,28,56,.22);
+  --font-display:"Fira Sans Condensed","Fira Sans","Segoe UI",system-ui,sans-serif;
+  --font-body:"Fira Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e8ecf5; --ink-soft:#a9b3c8; --page:#11151f; --surface:#171c28; --line:#2b3345; --line-strong:#3d475d;
+    --navy:#dfe6ff; --core:#2a2514; --core-head:#b8922a; --core-ink:#1a1400;
+    --teal:#22a395; --teal-sub:#1d4642; --purple:#8a5fc4; --purple-sub:#33284a; --blue:#3a8ae0; --blue-sub:#1d3756;
+    --muted-head:#222837;
+    --assoc:#48c060; --mixed:#f0b43a; --null:#7c8699; --unadj:#7c8699;
+    --pop-bg:#1d2332; --pop-shadow:0 12px 32px rgba(0,0,0,.55);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e8ecf5; --ink-soft:#a9b3c8; --page:#11151f; --surface:#171c28; --line:#2b3345; --line-strong:#3d475d;
+  --navy:#dfe6ff; --core:#2a2514; --core-head:#b8922a; --core-ink:#1a1400;
+  --teal:#22a395; --teal-sub:#1d4642; --purple:#8a5fc4; --purple-sub:#33284a; --blue:#3a8ae0; --blue-sub:#1d3756;
+  --muted-head:#222837;
+  --assoc:#48c060; --mixed:#f0b43a; --null:#7c8699; --unadj:#7c8699;
+  --pop-bg:#1d2332; --pop-shadow:0 12px 32px rgba(0,0,0,.55);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.45}
+header.top{padding:24px 20px 4px;max-width:1500px;margin:0 auto}
+h1{font-family:var(--font-display);font-weight:600;font-size:clamp(22px,3vw,32px);margin:0;color:var(--navy);text-wrap:balance}
+.sub{margin:4px 0 0;font-size:15px;color:var(--ink-soft);max-width:95ch}
+.keys{display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center;max-width:1500px;margin:12px auto 0;padding:0 20px;font-size:13px;color:var(--ink-soft)}
+.keys .k{display:inline-flex;align-items:center;gap:6px}
+.keys b{color:var(--ink);font-weight:600}
+.wrap{padding:12px 16px 8px;overflow-x:auto}
+table.pm{border-collapse:separate;border-spacing:0;margin:0 auto;background:var(--surface);border:1px solid var(--line-strong);font-variant-numeric:tabular-nums}
+.pm th,.pm td{border-bottom:1px solid var(--line);padding:0;text-align:center;vertical-align:middle}
+.pm thead th{font-family:var(--font-display);font-weight:600;background:var(--muted-head);color:var(--ink)}
+.pm th.g1{font-size:15px;height:30px;border-left:2px solid var(--surface)}
+.pm th.g1.core{background:var(--core-head);color:var(--core-ink)}
+.pm th.g2{font-size:13.5px;height:26px;border-left:2px solid var(--surface)}
+.pm th.g2.vol{background:var(--teal-sub)} .pm th.g2.str{background:var(--purple-sub)} .pm th.g2.oth{background:var(--muted-head)}
+.pm th.g3{font-size:12.5px;font-weight:500;height:40px;padding:2px 4px;line-height:1.1}
+.pm th.g3 button{all:unset;cursor:pointer;display:block;width:100%;padding:3px 2px;border-radius:4px}
+.pm th.g3 button:hover,.pm th.g3 button:focus-visible{background:color-mix(in srgb,var(--navy) 12%,transparent);outline:none}
+.pm th.g3 button[aria-pressed="true"]{background:var(--navy);color:var(--surface)}
+.pm th.g3 .arr{font-size:10px;opacity:.7}
+.pm th.core3{background:color-mix(in srgb,var(--core-head) 35%,var(--surface))}
+.pm th.study{position:sticky;left:0;z-index:3;text-align:left;padding:0 8px;min-width:180px;font-size:16px}
+.pm td.study{position:sticky;left:0;z-index:2;background:var(--surface);text-align:left;padding:0 12px;white-space:nowrap;font-weight:500;border-right:1px solid var(--line-strong)}
+.pm th.ctx{font-size:12.5px;font-weight:500;padding:0 6px}
+.pm td.ctx{font-size:12.5px;color:var(--ink-soft);padding:0 8px;white-space:nowrap}
+.pm td.ctx.n{text-align:right}
+.pm td.ctx.last,.pm th.ctx.last{border-right:1px solid var(--line-strong)}
+.pm td.pc{width:66px;height:34px;position:relative}
+.pm td.pc.core{background:var(--core);width:78px}
+.pm td.pc.gs{border-left:2px solid var(--line)}
+.pm td.pc.oth{width:58px}
+.pm td.cv{width:64px}
+.pm td.cv.first,.pm th.cvh.first{border-left:1px solid var(--line-strong)}
+.pm th.cvh{font-size:12.5px;font-weight:500;padding:0 6px;line-height:1.1;width:72px;white-space:nowrap}
+tr.own td{border-bottom:2px solid var(--line-strong)}
+tr.own td.study{font-weight:700}
+tbody tr.row:hover td{background-image:linear-gradient(color-mix(in srgb,var(--navy) 6%,transparent),color-mix(in srgb,var(--navy) 6%,transparent))}
+tr.tally td{background:color-mix(in srgb,var(--muted-head) 60%,var(--surface));height:38px;font-size:11.5px;color:var(--ink-soft);border-bottom:2px solid var(--line-strong)}
+tr.tally td.study{font-style:italic;font-weight:500;color:var(--ink-soft);background:color-mix(in srgb,var(--muted-head) 60%,var(--surface))}
+tr.tally td.core{background:color-mix(in srgb,var(--core) 70%,var(--muted-head))}
+.tl{display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.05}
+.tl .bar{display:flex;height:6px;width:44px;border-radius:3px;overflow:hidden;background:var(--line)}
+.tl .bar i{display:block;height:100%}
+.tl .num{font-size:11px;letter-spacing:.2px}
+.g{display:inline-flex;align-items:center;gap:3px}
+.g svg{width:18px;height:18px;display:block}
+.tag{font-size:10.5px;font-weight:600;color:var(--ink-soft);letter-spacing:.2px}
+.dot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1.5px solid var(--blue);background:transparent;opacity:.35}
+.dot.on{background:var(--blue);opacity:1}
+.dot.half{background:linear-gradient(90deg,var(--blue) 50%,transparent 50%);opacity:1}
+[data-k]{cursor:pointer;outline:none}
+td[data-k]:hover,td[data-k]:focus-visible,td[data-k].active{box-shadow:inset 0 0 0 2px var(--navy)}
+td.study[data-k]:hover,td.study[data-k]:focus-visible,td.study[data-k].active{box-shadow:inset 3px 0 0 var(--navy);text-decoration:underline;text-underline-offset:3px}
+.notes{max-width:1100px;margin:8px auto 36px;padding:0 20px;font-size:12.5px;color:var(--ink-soft)}
+.notes p{margin:5px 0;max-width:120ch}
+#pop{position:fixed;z-index:50;width:min(450px,calc(100vw - 24px));max-height:min(72vh,620px);overflow:auto;background:var(--pop-bg);color:var(--ink);border:1px solid var(--line-strong);border-radius:10px;box-shadow:var(--pop-shadow);display:none;font-size:13.5px}
+#pop.show{display:block}
+#pop .ph{display:flex;align-items:flex-start;gap:10px;padding:10px 12px 8px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--pop-bg)}
+#pop .ph .bar{width:6px;align-self:stretch;border-radius:3px;flex:none}
+#pop .ph h2{font-family:var(--font-display);font-size:16px;font-weight:600;margin:0;line-height:1.2;text-wrap:balance}
+#pop .ph .kk{font-size:12px;color:var(--ink-soft);margin-top:2px}
+#pop a.pmlink{color:var(--blue);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+#pop a.pmlink:focus-visible{outline:2px solid var(--navy);outline-offset:1px}
+#pop .ph button{margin-left:auto;flex:none;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:6px;width:26px;height:26px;font-size:16px;line-height:1;cursor:pointer;display:none}
+#pop.pinned .ph button{display:block}
+#pop .pb{padding:10px 14px 12px}
+#pop ul{margin:0;padding-left:18px} #pop li{margin:3px 0}
+#pop dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;margin:0 0 8px} #pop dt{color:var(--ink-soft)} #pop dd{margin:0}
+#pop .ttl{font-style:italic;margin:0 0 8px}
+#pop table.est{width:100%;border-collapse:collapse;margin:2px 0 6px;font-variant-numeric:tabular-nums}
+#pop table.est td{border-top:1px solid var(--line);padding:4px;vertical-align:top;text-align:left}
+#pop table.est td:last-child{white-space:nowrap;text-align:right}
+#pop .sig{font-weight:600} #pop .ns{color:var(--ink-soft)} #pop .opp{font-weight:600;color:var(--mixed)}
+#pop .note{margin:6px 0 0;font-size:12.5px}
+#pop .model{font-size:12px;color:var(--ink-soft);margin-top:8px;border-top:1px dashed var(--line);padding-top:6px}
+@media (prefers-reduced-motion: no-preference){#pop.show{animation:pin .12s ease-out}@keyframes pin{from{opacity:.4;transform:translateY(3px)}to{opacity:1;transform:none}}}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>LA–Brain Exposure–Outcome Pair Matrix</h1>
+  <p class="sub">Each cell is one exposure–outcome pair, coded from the study's fully adjusted model. The highlighted columns are the primary models. Hover or tap a cell for the estimates. Click any column name to sort; click again to reverse.</p>
+</header>
+<div class="keys" id="keys"></div>
+<div class="wrap"><table class="pm" id="pm"></table></div>
+<div class="notes">
+  <p><b>Associated</b>: at least one fully adjusted test of that pair was significant (p&lt;0.05). <b>Null</b>: no fully adjusted test was significant. <b>Unadjusted</b>: only unadjusted comparisons were reported. A “test” is each LA measure × outcome definition the paper reported in its fully adjusted model; the hover card lists every test, with significant ones in bold.</p>
+  <p>Infarct (primary models) is MRI-detected: silent infarcts, lacunes, cortical infarcts, microinfarcts, and acute infarct volume in stroke patients (Homssi). Clinical stroke is adjudicated ischemic stroke (incident, plus TIA in Habibi; prevalent prior stroke in Bianco). WMH includes WMH volume or load, white matter grade, Fazekas and ARWMC scores, and abnormal white matter volume. Cognition is neuropsychological test performance; <b>Δ</b> marks studies that also tested change over follow-up. Dementia is adjudicated incident dementia. DWI covers diffusion measures (fractional anisotropy, free water).</p>
+  <p>Mean age is in years (± SD). Infarct prevalence is the share of the analysed sample with ≥1 MRI-detected infarct, shown only for studies with an infarct outcome; Tan shows lacunes, Homssi enrolled only acute stroke patients, and Masini shows incident clinical ischemic stroke over follow-up. Hover a value for its definition.</p>
+</div>
+<div id="pop" role="dialog" aria-live="polite"><div class="ph"><i class="bar"></i><div><h2></h2><div class="kk"></div></div><button type="button" aria-label="Close details">×</button></div><div class="pb"></div></div>
+<script>
+/* e(test, estimate, significant?) */
+function e(t,v,s){return {t,v,s:!!s}}
+
+const S=[
+{id:"karadag",label:"Karadag 2013",
+ meta:{title:"Relationship between left atrial volume index and cognitive decline in elderly patients with sinus rhythm",authors:"Karadag B, Ozyigit T, Ozben B, Kayaoglu S, Altuntas Y",journal:"J Clin Neurosci. 2013;20(8):1074–1078",parent:"None (single-center geriatric outpatient clinic, Sisli Etfal Teaching & Research Hospital, Istanbul, Turkey)",design:"Cross-sectional",n:"108",age:"74.8 ± 6.9 y",female:"75% (27 men)",extra:"Consecutive patients >65 y in sinus rhythm; AF, heart failure, prior MI, prior stroke, severe valve disease and depression excluded."},
+ cells:{
+  la_size:["Biplane 2D TTE LA volume indexed to BSA (LAVI), dichotomized at ≥34 mL/m² (ROC-derived cut-off)","Also measured: M-mode anteroposterior LA diameter and LA volume (LAV)","LAVI 46.6 ± 10.7 vs 32.9 ± 6.3 mL/m² in impaired vs normal cognition"],
+  neuro:["Mini-Mental State Examination (Turkish version)","Cognitive impairment defined as MMSE ≤25 (35/108, 32.4%)","Dementia excluded by DSM-IV interview"],
+  demo:["Age (entered as ≥75 years)"],
+  cvrisk:["Body mass index","LDL cholesterol","Triglycerides","Fasting blood glucose"],
+  af:["AF excluded (any documented AF; sinus rhythm confirmed on ECG at enrollment)"]},
+ result:{cls:"pos",lead:"Multivariable logistic regression for cognitive impairment (MMSE ≤25)",
+  est:[e("LAVI ≥34 vs <34 mL/m² — adjusted OR","29.57 (3.34–261.81), p=0.002",1),e("Age ≥75 y — adjusted OR","3.89 (1.01–15.82), p=0.048",1),e("LAVI ≥34 — unadjusted OR","36.91 (4.80–284.15), p<0.001",1)],
+  model:"Model: LAVI ≥34, age ≥75, BMI, LDL, triglycerides, fasting glucose."}},
+
+{id:"alosco",label:"Alosco 2013",
+ meta:{title:"Left atrial size is independently associated with cognitive function",authors:"Alosco ML, Gunstad J, Jerskey BA, Clark US, Hassenstab JJ, Xu X, Poppas A, Cohen RA, Sweet LH",journal:"Int J Neurosci. 2013;123(8):544–552",parent:"None (outpatient cardiology clinics + community advertisements, Providence, RI; NIH R01 HL084178)",design:"Cross-sectional",n:"50 (48 with MRI)",age:"64.5 ± 9.4 y",female:"58%",extra:"92% White; MMSE >24, no dementia, no history of stroke."},
+ cells:{
+  la_size:["Anteroposterior LA diameter, parasternal long-axis view on transthoracic echo (ASE standards)","Mean 3.21 ± 0.65 cm; 4% >4.0 cm"],
+  vol:["Whole-brain volume = frontal + temporal + parietal + occipital lobes (FreeSurfer v5.0, 3T MPRAGE), adjusted for intracranial volume","Post hoc: temporal-lobe structures (parahippocampal, temporal pole, superior/middle/inferior temporal, insula)"],
+  neuro:["RBANS (Repeatable Battery for the Assessment of Neuropsychological Status), age-normed standard scores","Composites: immediate memory, visuospatial/construction, language, attention, delayed memory, total index"],
+  demo:["Age","Sex","Years of education","Premorbid IQ (Wechsler Test of Adult Reading)"],
+  cvrisk:["Hypertension","Diabetes","Heart failure","Thyroid disease","Cardiovascular medication use","Depressive symptoms (BDI-II)","History of cardiac arrhythmia (not AF-specific)"],
+  lv:["LV ejection fraction (biplane Simpson)","LV end-diastolic volume","Mitral regurgitation severity"]},
+ result:{cls:"pos",lead:"Hierarchical linear regression; LA diameter entered after all covariates (standardized β, unstandardized b and SE)",
+  grp:[["Neurocognitive (RBANS)",[e("Language","β −0.45 (b −9.95, SE 3.89), p=0.04",1),e("Delayed memory","β −0.47 (b −9.14, SE 4.36), p=0.02",1),e("Total index","β −0.41 (b −7.74, SE 3.57), p=0.04",1),e("Immediate memory","b −7.14 (SE 4.57), NS"),e("Visuospatial/construction","b −4.71 (SE 5.70), NS"),e("Attention","b −3.40 (SE 3.47), NS")]],
+   ["Volumetrics",[e("Whole-brain volume","β 0.09, p=0.43"),e("Temporal-lobe structures (partial r)","all p>0.05")]]],
+  model:"Model: age, sex, education, WTAR, BDI-II, LVEF, MR, EDV, HTN, DM, arrhythmia, thyroid disease, HF, CVD medication (+ ICV for MRI)."}},
+
+{id:"russo13",label:"Russo 2013 (CABL)",
+ meta:{title:"LA volumes and reservoir function are associated with subclinical cerebrovascular disease: the CABL (Cardiovascular Abnormalities and Brain Lesions) study",authors:"Russo C, Jin Z, Liu R, Iwata S, Tugcu A, Yoshita M, Homma S, Elkind MSV, Rundek T, DeCarli C, Wright CB, Sacco RL, Di Tullio MR",journal:"JACC Cardiovasc Imaging. 2013;6(3):313–324",parent:"CABL — Cardiovascular Abnormalities and Brain Lesions, recruited from NOMAS (Northern Manhattan Study) MRI substudy",design:"Cross-sectional, community-based",n:"455",age:"70.2 ± 10.1 y",female:"61%",extra:"Stroke-free; 69% Hispanic, 16% Black, 14% White. Median 2 days between echo and MRI."},
+ cells:{
+  la_size:["Real-time 3D echocardiography (Philips QLAB 8.1), indexed to BSA","LAVmin — LA end-diastolic volume, first frame after mitral valve closure","LAVmax — LA end-systolic volume, frame before mitral valve opening"],
+  la_other:["LA reservoir function from 3D volumes","LA total emptying volume LAEV = LAVmax − LAVmin","LA total emptying fraction LAEF = 100 × (LAVmax − LAVmin)/LAVmax"],
+  cvd:["Silent brain infarcts on 1.5T FLAIR/T2 (≥3 mm cavitation; 15.4% prevalence)","White matter hyperintensity volume as % of total cranial volume, log-transformed"],
+  demo:["Age (fully adjusted stepwise model)","Sex, race-ethnicity, BMI in the demographic model"],
+  cvrisk:["Hypertension","Diabetes","Coronary artery disease"],
+  af:["Atrial fibrillation (ECG at echo or self-report; 5.5%)","Sensitivity analysis excluding AF and significant MR"],
+  lv:["LV mass index","Relative wall thickness","LV ejection fraction","LV diastolic dysfunction","Mitral regurgitation (SBI model)"]},
+ result:{cls:"pos",lead:"Fully adjusted (stepwise) models, per 1-SD increase",
+  grp:[["Silent brain infarcts — OR (95% CI)",[e("LAVmin","1.37 (1.04–1.80), p<0.05",1),e("LAEF","0.67 (0.50–0.90), p<0.01",1),e("LAVmax","1.15 (0.88–1.50), p=0.32"),e("LAEV","0.77 (0.58–1.02), p=0.07"),e("LAVmin >15.1 mL/m² (75th pct)","2.56 (1.36–4.84)",1),e("LAEF <37.7% (25th pct)","2.41 (1.31–4.41)",1)]],
+   ["Log-WMH volume — standardized β",[e("LAVmin","β 0.12 (B 1.8, SE 0.7), p<0.01",1),e("LAEF","β −0.09 (B −0.7, SE 0.3), p<0.05",1),e("LAVmax","β 0.06, p=0.22"),e("LAEV","β −0.05, p=0.21")]]],
+  model:"SBI model covariates (stepwise): age, HTN, DM, CAD, AF, LV mass, RWT, LVEF, LV diastolic dysfunction, MR. WMH model: age, BMI, HTN, CAD, AF, LV mass, RWT, LVEF, LV diastolic dysfunction."}},
+
+{id:"cogswell",label:"Cogswell 2017 (ARIC-NCS)",
+ meta:{title:"High prevalence of subclinical cerebral infarction in patients with heart failure with preserved ejection fraction",authors:"Cogswell RJ, Norby FL, Gottesman RF, Chen LY, Solomon S, Shah A, Alonso A",journal:"Eur J Heart Fail. 2017;19(10):1303–1309",parent:"ARIC-NCS — Atherosclerosis Risk in Communities Neurocognitive Study, visit 5 (2011–13)",design:"Cross-sectional; LA analysis restricted to participants with HFpEF and no prior AF",n:"167 (HFpEF without AF; 49 with SCI) of 1,527 with echo, brain MRI and cognition",age:"76.6 ± 5.1 y (HFpEF/no AF group)",female:"60% (40.1% men)",extra:"40.7% Black. HFpEF = clinical HF with LVEF ≥50%. Primary exposure of the paper is HFpEF/AF status; LA volume index was examined as a predictor of SCI within the HFpEF/no AF group."},
+ cells:{
+  la_size:["2D TTE LA volume index (visit 5 echocardiogram)","Modelled per 1-SD increase"],
+  cvd:["Subclinical cerebral infarcts on 3T brain MRI: focal non-mass lesions ≥3 mm, bright on T2/PD and dark on T1"],
+  demo:["Male sex (only covariate retained with LAVI after backwards stepwise selection, P<0.10)"],
+  af:["Prior or current AF excluded (HFpEF/no AF analysis group)"]},
+ result:{cls:"pos",lead:"Final multivariable model after backwards stepwise selection, per 1-SD higher LA volume index",
+  grp:[["Subclinical cerebral infarct — OR",[e("LA volume index","1.41 (1.00–2.00)",1)]]],
+  model:"Backwards stepwise logistic regression (P<0.10 to stay) among HFpEF/no AF participants; retained male sex and LAVI. Candidates not retained: age, Black race, SBP, DBP, antihypertensive medication, anticoagulant use, BNP, LV mass index."}},
+
+{id:"cermakova",label:"Cermakova 2017 (CARDIA)",
+ meta:{title:"Subclinical cardiac dysfunction and brain health in midlife: CARDIA (Coronary Artery Risk Development in Young Adults) brain magnetic resonance imaging substudy",authors:"Cermakova P, Muller M, Armstrong AC, Religa D, Bryan RN, Lima JAC, Launer LJ",journal:"J Am Heart Assoc. 2017;6(12):e006750",parent:"CARDIA — Coronary Artery Risk Development in Young Adults, Brain MRI Substudy (Birmingham, Minneapolis, Oakland)",design:"Prospective: echo at year 5 (1990) → brain MRI at year 25 (2010)",n:"648 (LA volume available in 406)",age:"30.4 ± 3.5 y at echo; 50.4 ± 3.5 y at MRI",female:"52%",extra:"38% Black."},
+ cells:{
+  la_size:["LA volume derived from M-mode LA diameter and 2D apical 4-chamber LA area (Desai formula), indexed to BSA","Modelled per 1-SD (z-score); mean 16.1 ± 4.2 mL/m²"],
+  vol:["Total brain, gray matter and white matter volume (3T sagittal 3D T1), corrected for intracranial volume"],
+  cvd:["Abnormal white matter (AWM) volume from 3D FLAIR/T1/T2 (ischemia, demyelination, inflammation)","Categorized: none, ≤0.3 cm³, >0.3 cm³ (median split)"],
+  dti:["White matter fractional anisotropy (WMFA) from diffusion tensor imaging"],
+  demo:["Age","Sex","Race","Field center","Years of education","Intracranial volume"],
+  cvrisk:["Systolic and diastolic BP","BMI","Total cholesterol","Fasting glucose","Smoking status","Sedentary time","Alcohol intake","APOE ε4"]},
+ result:{cls:"pos",lead:"Model 2 (fully adjusted), per 1-SD higher LA volume",
+  grp:[["DTI",[e("WM fractional anisotropy — β","−0.002 (−0.004 to −0.0004), p=0.016",1),e("…Black participants (n=166)","−0.004 (−0.007 to −0.001), p=0.007",1),e("…Men (n=197)","−0.003 (−0.005 to −0.0003), p=0.026",1),e("…White / women","NS")]],
+   ["Volumetrics — β, cm³ (Table S4)",[e("Gray matter","−0.04 (−2.19 to 2.10)"),e("White matter","−1.92 (−4.44 to 0.62)"),e("Total brain","−1.96 (−4.95 to 1.04)")]],
+   ["Abnormal white matter — OR vs none (Table S4)",[e("Little AWM (≤0.3 cm³)","0.73 (0.54–0.97)",1),e("High AWM (>0.3 cm³)","0.92 (0.69–1.22)")]]],
+  model:"Model 2: age, sex, race, field center, education, ICV, SBP, DBP, BMI, total cholesterol, fasting glucose, smoking, sedentary time, alcohol, APOE ε4."}},
+
+{id:"yaghi",label:"Yaghi 2018 (CHS)",
+ meta:{title:"Left atrial diameter and vascular brain injury on MRI: the Cardiovascular Health Study",authors:"Yaghi S, Bartz TM, Kronmal R, Kamel H, Gottdiener J, Longstreth WT Jr, Elkind MSV",journal:"Neurology. 2018;91(13):e1237–e1244",parent:"CHS — Cardiovascular Health Study (community adults ≥65 y from Medicare lists in 4 US counties)",design:"Prospective cohort; prevalent (cross-sectional) and incident (~5-y repeat MRI) analyses",n:"2,335 with LA diameter + initial MRI (939 incident-infarct; 1,158 WMH-change)",age:"72.0 ± 4.8 y",female:"61% (38.7% men)",extra:"Echo 1989–90 / 1994–95; MRI 1991–94 and 1997–99."},
+ cells:{
+  la_size:["2D TTE anteroposterior LA diameter, parasternal long-axis at aortic-valve level (primary), per 1 cm","Secondary: LA volume by length-ellipsoid method (1994–95, n=240)","LA enlargement categories by sex-specific ASE cut-offs"],
+  cvd:["MRI-defined infarcts ≥3 mm (prevalent and incident; any and nonlacunar)","Leukoaraiosis: white matter grade 0–9 and its worsening on follow-up MRI"],
+  demo:["Age","Sex","Black race","Body surface area","Time between echo and MRI"],
+  cvrisk:["Systolic BP","Antihypertensive therapy","LDL","HDL","Diabetes","Smoking","Coronary heart disease","Heart failure","Oral anticoagulant use"],
+  af:["Atrial fibrillation from ECG, hospitalization records and Medicare inpatient/outpatient/carrier claims"],
+  lv:["Echocardiographic LV hypertrophy (LV mass indexed to sex, height, weight; >95th pct of healthy CHS)"]},
+ result:{cls:"pos",lead:"Model 2 (fully adjusted), per 1-cm larger LA diameter",
+  grp:[["Prevalent (first MRI after echo)",[e("Any infarct — RR","1.20 (1.08–1.34), p<0.001",1),e("Nonlacunar infarct — RR","1.28 (1.06–1.54), p=0.01",1),e("White matter grade — β","−0.08 (−0.17 to 0.01), p=0.07")]],
+   ["Incident (follow-up MRI)",[e("Incident infarct — RR","1.004 (0.78–1.29), p=0.97"),e("Incident nonlacunar infarct — RR","0.98 (0.67–1.42), p=0.91"),e("WMG worsening — β","−0.04 (−0.10 to 0.02), p=0.19")]],
+   ["Secondary exposure",[e("LA volume, per 1 mL — prevalent infarct RR","1.02 (1.01–1.03), p=0.003",1),e("LA volume — WMG β","−0.01 (−0.02 to 0.01), p=0.57")]]],
+  model:"Model 2: age, sex, Black race, BSA, echo–MRI interval, SBP, LDL, HDL, DM, CHD, smoking, AF, HF, oral anticoagulants, LVH, antihypertensives."}},
+
+{id:"habibi",label:"Habibi 2019 (MESA)",
+ meta:{title:"Left atrial mechanical function and incident ischemic cerebrovascular events independent of AF: insights from the MESA study",authors:"Habibi M, Zareian M, Ambale Venkatesh B, Samiei S, Imai M, Wu C, Launer LJ, Shea S, Gottesman RF, Heckbert SR, Bluemke DA, Lima JAC",journal:"JACC Cardiovasc Imaging. 2019;12(12):2417–2427",parent:"MESA — Multi-Ethnic Study of Atherosclerosis (6 US communities; baseline 2000–02)",design:"Prospective cohort; baseline CMR, follow-up 11.6 ± 3.5 y",n:"4,261 with CMR LA measures, free of clinical CVD and prevalent AF",age:"61 ± 10 y",female:"52%",extra:"Outcome: 193 adjudicated incident ischemic cerebrovascular events (134 ischemic strokes, 59 TIAs; 1.26 per 1,000 person-years). Total LAEF was the main positive finding (Model 2 HR 0.85 per SD, 0.74–0.98)."},
+ cells:{
+  la_size:["1.5T cine CMR, feature tracking (MTT v5.0): maximum and minimum LA volume indexed to BSA (LAVImax, LAVImin), per SD"],
+  la_strain:["Feature-tracking CMR global peak longitudinal LA strain (4- and 2-chamber views), per SD"],
+  la_other:["Volumetric LA phasic function: passive, active and total LA emptying fraction, per SD"],
+  stroke:["Adjudicated incident ischemic cerebrovascular event: ischemic stroke or TIA (vascular neurologist review)"],
+  demo:["Age","Sex","Race/ethnicity"],
+  cvrisk:["BMI","Cigarette smoking","Systolic and diastolic BP","Antihypertensive use","Total cholesterol","HDL","Statin use","Diabetes"],
+  af:["Prevalent AF excluded","Interim incident AF as time-dependent covariate (Model 2) or time-fixed (Model 3)"],
+  lv:["LV mass"]},
+ result:{cls:"mixed",lead:"Model 2 (Model 1 + interim incident AF, time-dependent), HR per SD",
+  grp:[["LA size",[e("LAVImax","1.02 (0.88–1.18), p=0.77"),e("LAVImin","1.09 (0.96–1.24), p=0.18")]],
+   ["LA strain",[e("Peak longitudinal LA strain","1.11 (0.98–1.26), p=0.088")]],
+   ["Volumetric LA function",[e("Total LAEF","0.85 (0.74–0.98), p=0.027",1),e("Active LAEF","0.88 (0.76–1.01), p=0.074"),e("Passive LAEF","0.97 (0.83–1.13), p=0.69")]]],
+  model:"Model 2: age, sex, ethnicity, BMI, smoking, SBP, DBP, antihypertensives, total cholesterol, HDL, statin, diabetes, LV mass + interim incident AF (time-dependent). In Model 1 (no AF term) LAVImin (HR 1.18) and active LAEF (0.84) were also significant."}},
+
+{id:"zhang",label:"Zhang 2019 (ARIC-NCS)",
+ meta:{title:"Association of left atrial enlargement and atrial fibrillation with cognitive function and decline: the ARIC-NCS",authors:"Zhang MJ, Norby FL, Lutsey PL, Mosley TH, Cogswell RJ, Konety SH, Chao TF, Shah AM, Solomon SD, Alonso A, Chen LY",journal:"J Am Heart Assoc. 2019;8(23):e013197",parent:"ARIC-NCS — Atherosclerosis Risk in Communities Neurocognitive Study",design:"Cross-sectional (visit 5, 2011–13) + ~5-y longitudinal change to visit 6 (2016–17)",n:"3,391 (both visits)",age:"74.4 ± 5.1 y",female:"59%",extra:"21% Black; LAE 13%, AF 6%."},
+ cells:{
+  la_size:["2D TTE biplane disk-summation LA volume at end-systole, indexed to BSA","LA enlargement (LAE) = LAVI ≥34 mL/m² (categorical)","Primary exposure: 4 groups — normal LA/no AF (ref), normal LA/AF, LAE/no AF, LAE/AF"],
+  neuro:["ARIC-NCS battery → factor scores (z):","Memory: Delayed Word Recall, Logical Memory I & II, Incidental Learning","Executive: Digit Symbol Substitution, Digit Span Backwards, Trail Making A & B","Language: Word Fluency, Animal Naming, Boston Naming","Global cognition composite; cross-sectional score and 5-y change"],
+  demo:["Age","Sex","Race / study center","Education"],
+  cvrisk:["APOE genotype","Smoking","BMI","Systolic and diastolic BP","Antihypertensive use","Diabetes","Prior stroke","CHD/MI","Heart failure","Anticoagulant use"],
+  af:["Prevalent AF from study ECGs (visits 1–5) and hospital ICD-9 427.31/427.32","Used as a stratifying group; adjusted for directly in the LAE-only analysis (Table S1/S4)"]},
+ result:{cls:"mixed",lead:"Model 3 (fully adjusted); difference in factor z-scores vs normal LA/no AF",
+  grp:[["Cross-sectional, visit 5",[e("LAE/AF — global cognition","−0.24 (−0.38 to −0.10)",1),e("LAE/AF — executive function","−0.25 (−0.40 to −0.10)",1),e("LAE/AF — language","−0.23 (−0.38 to −0.07)",1),e("LAE/no AF — global cognition","−0.04 (−0.11 to 0.02)"),e("LAE/no AF — executive","−0.04 (−0.12 to 0.02)"),e("LAE vs normal, + AF adj — executive","−0.07 (−0.14 to −0.01)",1),e("LAE vs normal, + AF adj — global","−0.06 (−0.13 to −0.01)",1)]],
+   ["5-year change, visit 5 → 6",[e("LAE/no AF — global change","0.02 (−0.03 to 0.07)"),e("LAE/AF — global change","−0.04 (−0.14 to 0.06)"),e("LAE vs normal, + AF adj — global change","0.03 (−0.02 to 0.07)")]]],
+  model:"Model 3: age, sex, race/center, education, APOE, smoking, BMI, SBP, DBP, antihypertensives, DM, stroke, CHD/MI, HF, anticoagulants. Cross-sectional association with LA enlargement, but no association with 5-y decline."}},
+
+{id:"mannina",label:"Mannina 2021 (CABL)",
+ meta:{title:"Left atrial strain and subclinical cerebrovascular disease in older adults",authors:"Mannina C, Tugcu A, Jin Z, Russo C, Matsumoto K, Ito K, Homma S, Elkind MSV, Rundek T, Yoshita M, DeCarli C, Wright CB, Sacco RL, Di Tullio MR",journal:"JACC Cardiovasc Imaging. 2021;14(2):508–510 (research letter)",parent:"CABL — Cardiovascular Abnormalities and Brain Lesions (NOMAS-derived, northern Manhattan)",design:"Cross-sectional, community-based",n:"270",age:"69.1 ± 9.7 y",female:"63.7%",extra:"SBI in 26 (9.6%); WMH analysed as upper quartile (n=68)."},
+ cells:{
+  la_strain:["2D speckle-tracking echo (Philips QLAB 8.1)","Reservoir: global peak positive longitudinal LA strain (LAεpos) and strain rate (LASRpos) in ventricular systole","Conduit: peak negative strain rate in early diastole (LASRearly-neg)","Pump: peak negative strain rate during LA contraction (LASRlate-neg)"],
+  cvd:["Silent brain infarcts on brain MRI","White matter hyperintensity volume — top quartile (WMH4)"],
+  demo:["Age (candidate and retained in WMH models)"],
+  cvrisk:["Hypertension","Systolic BP (WMH candidate pool)"],
+  lv:["LV global longitudinal strain (retained in SBI models)","LV mass index, LVEF (candidates)"]},
+ result:{cls:"pos",lead:"Final stepwise multivariable models, OR (95% CI) — scaling not stated in the letter",
+  grp:[["Silent brain infarcts",[e("LAεpos","2.43 (1.62–3.65), p<0.001",1),e("LASRpos","2.37 (1.64–3.44), p<0.001",1),e("LASRearly-neg","2.74 (1.69–4.46), p<0.001",1),e("LASRlate-neg","2.98 (1.81–4.89), p<0.001",1)]],
+   ["WMH (upper quartile)",[e("LAεpos","1.42 (0.98–2.05), p=0.063"),e("LASRpos","1.36 (0.95–1.95), p=0.094"),e("LASRearly-neg","1.35 (1.00–1.82), p=0.053"),e("LASRlate-neg","1.37 (1.01–1.85), p=0.040",1)]]],
+  model:"Stepwise (entry p=0.30, stay 0.35). SBI pool: age, LVMI, LVEF, LV GLS, LAVImax, LAVImin. WMH pool: age, HTN, SBP, LVMI, LV GLS, LAVImin. Adding LA strain raised the SBI c-index from 0.67 to 0.77."}},
+
+{id:"potter",label:"Potter 2021 (Vic-ELF)",
+ meta:{title:"Associations of subclinical heart failure and atrial fibrillation with mild cognitive impairment: a cross-sectional study in a subclinical heart failure screening programme",authors:"Potter EL, Ramkumar S, Wright L, Marwick TH",journal:"BMJ Open. 2021;11(7):e045896",parent:"Vic-ELF — Victorian Study of Echocardiographic Detection of Subclinical Left Ventricular Dysfunction (community screening trial, Australia; ACTRN12617000116325)",design:"Cross-sectional (trial baseline)",n:"337 (LA reservoir strain available in 248)",age:"Median 70 y (IQR 68–73)",female:"58%",extra:"Age ≥65 with ≥1 LV dysfunction risk factor (hypertension, type 2 diabetes or obesity); no HF or ischaemic heart disease. Known AF 7%; MCI (MoCA <26) 30%."},
+ cells:{
+  la_size:["2D TTE biplane (Simpson) LA volume indexed to BSA (LAVI), per 1 mL/m²"],
+  la_strain:["LA reservoir strain by speckle tracking (TomTec Arena), average of apical 4- and 2-chamber views, QRS-gated; per 1% and abnormal <24%"],
+  neuro:["Montreal Cognitive Assessment (MoCA <26 = MCI)","MoCA domains: executive/visuospatial, naming, attention, language, abstraction, delayed recall, orientation"]},
+ result:{cls:"unadj",lead:"No adjusted estimate for any LA measure; univariable logistic regression for MCI",
+  est:[e("LAVI, per 1 mL/m² — OR","1.00 (0.98–1.03), p=0.56"),e("LA reservoir strain, per 1% — OR","0.98 (0.96–1.04), p=0.91"),e("LA reservoir strain <24% — OR","0.66 (0.13–3.27), p=0.61")],
+  model:"Variables with univariable p<0.1 entered the multivariable model (prior stroke/TIA, education, SBP, BMI, waist-to-hip ratio); no LA measure qualified, so all LA findings are unadjusted."}},
+
+{id:"rouch",label:"Rouch 2022 (CARDIA)",
+ meta:{title:"Twenty-five-year change in cardiac structure and function and midlife cognition: the CARDIA study",authors:"Rouch L, Hoang T, Xia F, Sidney S, Lima JAC, Yaffe K",journal:"Neurology. 2022;98(10):e1040–e1049",parent:"CARDIA — Coronary Artery Risk Development in Young Adults (Birmingham, Chicago, Minneapolis, Oakland)",design:"Prospective cohort: echo at years 5, 25 and 30 (25-year change) and cognition at year 30",n:"2,653 overall; 1,492 with LAVi",age:"≈55 y at year 30 (30.1 ± 3.5 y at year-5 echo)",female:"57%",extra:"46% Black. Exposures dichotomized at ≥1 SD: greater 25-year increase in LAVi (slope from mixed models) and higher year-30 LAVi."},
+ cells:{
+  la_size:["2D TTE LA volume (apical 4-chamber, ASE) indexed to BSA (LAVi) at years 5, 25 and 30","25-year change: participant-specific slope; ≥1 SD above mean slope vs reference","Year 30: LAVi ≥1 SD above mean vs reference; sensitivity analysis as continuous"],
+  neuro:["Year-30 battery (z-scores): MoCA (global), DSST (processing speed), Stroop (executive), RAVLT delayed recall (verbal memory), letter + category fluency","Equally weighted composite score"],
+  demo:["Age","Sex","Race","Years of education"],
+  cvrisk:["Hypertension","Diabetes","Current smoking","Obesity","Additional model: CHF, CHD, TIA/stroke"],
+  af:["Atrial fibrillation (adjudicated) in additional model"]},
+ result:{cls:"pos",lead:"Model 2 (age, sex, race, education, hypertension, diabetes, smoking, obesity); LAVi ≥1 SD vs reference",
+  grp:[["25-year increase in LAVi — adjusted mean z-score, ≥1 SD vs reference",[e("MoCA","−0.28 vs −0.12, p=0.01",1),e("RAVLT","−0.31 vs −0.20, p=0.11"),e("Reversed Stroop","−0.09 vs −0.18, p=0.21"),e("DSST","−0.21 vs −0.18, p=0.67"),e("Verbal fluency","−0.12 vs −0.09, p=0.65"),e("Composite","−0.17 vs −0.15, p=0.61")]],
+   ["Year-30 LAVi ≥1 SD above mean",[e("MoCA and RAVLT","lower, p≤0.01",1),e("DSST, Stroop, verbal fluency","NS after adjustment")]]],
+  model:"Model 2: age, sex, race, education, hypertension, diabetes, current smoking, obesity. Further adjustment for CHF, CHD, AFib and TIA/stroke did not notably change results. With LVMi and LVEF entered together, 25-year LAVi increase was not associated with the composite score (p=0.48)."}},
+
+{id:"wang22",label:"Wang 2022 (ARIC)",
+ meta:{title:"Association of echocardiographic measures of left atrial function and size with incident dementia",authors:"Wang W, Zhang MJ, Inciardi RM, Norby FL, Johansen MC, Parikh R, Van’t Hof JR, Alonso A, Soliman EZ, Mosley TH, Gottesman RF, Shah AM, Solomon SD, Chen LY",journal:"JAMA. 2022;327(12):1138–1148",parent:"ARIC — Atherosclerosis Risk in Communities (visit 5 baseline)",design:"Prospective cohort; follow-up through 2019 (median 6 y)",n:"4,096 (531 incident dementia)",age:"75 ± 5 y",female:"60%",extra:"22% Black; free of AF, stroke and dementia at baseline."},
+ cells:{
+  la_size:["2D TTE (Simpson) maximal and minimal LA volume index (LAVImax, LAVImin)","Analysed in quintiles (highest vs lowest)"],
+  la_strain:["Speckle-tracking (Philips QLAB 13.0), apical 4-chamber, 12 segments","Reservoir, conduit and contractile strain (absolute values)","Quintiles (lowest vs highest); reservoir <27% as possible cut-off"],
+  la_other:["Volumetric LA phasic function:","LA emptying fraction (reservoir)","Passive emptying fraction (conduit)","Active emptying fraction (pump)"],
+  dementia:["Adjudicated incident dementia: ARIC-NCS in-person visits 6–7, TICSm / Six-Item Screener / informant interview, ICD hospital and death-certificate codes","6 months subtracted from diagnosis date"],
+  demo:["Age","Sex","Race-center","Education"],
+  cvrisk:["APOE ε4","BMI","Smoking","Diabetes","Systolic BP","Antihypertensive use","CHD","Heart failure","Anticoagulant use","Incident stroke (time-varying)"],
+  af:["Prevalent AF excluded","Incident AF as time-varying covariate; mediation analysis (AF mediated <2%)"],
+  lv:["LV ejection fraction","LV mass index"]},
+ result:{cls:"pos",lead:"Model 3 (fully adjusted) Cox HR for incident dementia",
+  grp:[["LA function — lowest vs highest quintile",[e("Reservoir strain","1.98 (1.42–2.75)",1),e("Conduit strain","1.50 (1.09–2.06)",1),e("Contractile strain","1.57 (1.16–2.14)",1),e("Emptying fraction","1.87 (1.31–2.65)",1),e("Passive emptying fraction","1.26 (0.93–1.71)"),e("Active emptying fraction","1.43 (1.04–1.96)",1),e("Reservoir strain <27% vs ≥27%","2.10 (1.68–2.61)",1)]],
+   ["LA size — highest vs lowest quintile",[e("LAVImax","0.77 (0.58–1.02)"),e("LAVImin","0.95 (0.71–1.28)")]]],
+  model:"Model 3: age, sex, race-center, APOE ε4, education, BMI, smoking, DM, SBP, antihypertensives, CHD, HF, anticoagulants, incident AF and stroke (time-varying), LAVImin (function measures), LVEF, LV mass index."}},
+
+{id:"bianco",label:"Bianco 2022 (ARIC-NCS)",
+ meta:{title:"Left atrial remodeling and stroke in patients with sinus rhythm and normal ejection fraction: ARIC-NCS",authors:"Bianco F, De Caterina R, Chandra A, Aquila I, Claggett B, Johansen MC, Gonçalves A, Norby FL, Cogswell R, Soliman EZ, Gottesman R, Mosley T, Alonso A, Shah A, Solomon SD, Chen LY",journal:"J Am Heart Assoc. 2022;11(9):e024292",parent:"ARIC-NCS — Atherosclerosis Risk in Communities Neurocognitive Study, visit 5 (2011–13)",design:"Cross-sectional; analyses stratified by age tertile",n:"407 (315 no infarct, 58 subclinical infarct, 34 clinical stroke)",age:"76 ± 8 y",female:"60%",extra:"Sinus rhythm, LVEF ≥50%, no history of AF/flutter, no moderate–severe valve disease or valve surgery. 21% Black. 336 excluded for insufficient 3DE image quality."},
+ cells:{
+  la_size:["3D echo LA maximal and minimal volume, indexed (descriptive only; no outcome model)"],
+  la_strain:["3D echo LA global longitudinal strain (TomTec 4D LV-Analysis 2.0; P-wave referenced) = LA reservoir function, per 1%"],
+  la_other:["3D volumetric LA ejection fraction (contractile function), per 1%","LA stiffness: E/e′ ÷ LA GLS (per unit) and E/e′ ÷ LA EF"],
+  cvd:["Subclinical cerebral infarcts on 3T MRI: focal, non-mass, nonlacunar lesions ≥3 mm (no clinical stroke history)"],
+  stroke:["Prior adjudicated clinical ischemic stroke (hospital records/death certificates, NINDS criteria) with MRI infarct — prevalent, cross-sectional"],
+  demo:["Age (models stratified by age tertile)","Sex (via CHA₂DS₂-VASc)"],
+  cvrisk:["CHA₂DS₂-VASc score (HF, hypertension, diabetes, prior stroke, vascular disease)","NT-proBNP","High-sensitivity troponin T"],
+  af:["History of AF or atrial flutter excluded (hospital discharge codes, visits 3–5, and study ECGs); sinus rhythm required"]},
+ result:{cls:"pos",lead:"Forward stepwise multivariable logistic regression, stratified by age tertile (T1 68 ± 2, T2 76 ± 2, T3 83 ± 3 y)",
+  grp:[["Subclinical cerebral infarct — OR",[e("LA GLS per 1% — T1","0.32 (0.30–0.97), p=0.036",1),e("LA GLS per 1% — T2","0.58 (0.52–0.69), p=0.008",1),e("LA GLS per 1% — T3","0.75 (0.70–0.78), p=0.001",1),e("E/e′ ÷ LA GLS per unit — T1 / T2 / T3","1.53 / 1.75 / 2.53, all p<0.05",1),e("LA EF per 1% — T1 / T2 / T3","0.35 / 0.77 / 0.95, all p<0.05",1)]],
+   ["Clinical stroke — OR",[e("LA GLS per 1% — T1","0.21 (0.19–0.99), p=0.043",1),e("LA GLS per 1% — T2","0.50 (0.36–0.66), p=0.015",1),e("LA GLS per 1% — T3","0.56 (0.53–0.60), p=0.001",1),e("E/e′ ÷ LA GLS per unit — T1 / T2 / T3","1.02 / 1.25 / 1.38, all p<0.05",1),e("LA EF per 1% — T1 / T2 / T3","0.43 / 0.65 / 0.98 (all NS)")]]],
+  model:"Forward stepwise logistic regression (entry p<0.05), age-tertile stratified. Final model (Table 4): CHA₂DS₂-VASc, NT-proBNP, hs-troponin T, LA EF, LA GLS, E/e′ ÷ LA GLS. Candidates also included race, BSA, BMI, BP, heart rate, prior MI, renal function, anticoagulant/antiplatelet use and LV volumes, EF, LV mass index and diastolic indices."}},
+
+{id:"casanova",label:"Casanova 2022 (PREDIMED-Plus)",
+ meta:{title:"Association of left atrial structure and function with cognitive function in adults with metabolic syndrome",authors:"Gonzalez Casanova I, Alonso-Gómez ÁM, Romaguera D, Toledo E, Fortuny E, López L, Ramallal R, Salas-Salvadó J, Tojal-Sierra L, Castañer O, Alonso A",journal:"Am J Cardiol. 2022;183:122–128",parent:"PREDIMED-Plus randomized trial — echocardiography substudy (Navarra, Araba/Vitoria, Son Espases/Mallorca, Spain)",design:"Cross-sectional baseline + 2-year change",n:"510 (468 with 2-y follow-up)",age:"65.1 ± 4.8 y (men 64.4, women 66.5)",female:"40%",extra:"Overweight/obesity with metabolic syndrome; no CVD or uncontrolled AF at entry."},
+ cells:{
+  la_size:["LA volume index (2D TTE, GE EchoPAC, core-lab reading), per 1-SD"],
+  la_strain:["Speckle tracking: peak LA longitudinal (reservoir) strain","Conduit strain and contractile strain (absolute values)"],
+  la_other:["LA emptying fraction (Vmax − Vmin)/Vmax","LA function index = LAEF × LVOT-VTI / indexed LA end-systolic volume","LA stiffness index = E/e′ ÷ peak LA systolic strain"],
+  neuro:["MMSE","Semantic (animals) and phonetic (letter P) verbal fluency","Digit Span forward + backward","Trail Making A and B (sign-inverted so higher = better)","Baseline and 2-year change, sample z-scores"],
+  demo:["Age","Sex","Recruitment site","Household size","Employment","Years of schooling"],
+  cvrisk:["Current and former smoking","Moderate–vigorous physical activity (METs/day)","17-item Mediterranean diet score","BMI","Diabetes","Depression","Intervention arm (longitudinal models)"]},
+ result:{cls:"mixed",lead:"Model 2 (fully adjusted), standardized β per 1-SD of LA measure",
+  grp:[["Baseline cognition",[e("All LA markers × all tests","no association (all CIs cross 0)")]],
+   ["2-year change — Trail Making A",[e("LA volume index","−0.12 (−0.22 to −0.02)",1),e("Peak LA longitudinal strain","0.11 (0.02 to 0.20)",1),e("LA stiffness index","−0.19 (−0.29 to −0.08)",1),e("LA emptying fraction","0.03 (−0.06 to 0.12)"),e("LA function index","0.08 (−0.03 to 0.17)")]],
+   ["2-year change — other tests",[e("Conduit strain → phonetic fluency","−0.09 (−0.17 to −0.02)",1),e("Peak strain → Digit Span","0.09 (0.00 to 0.17)"),e("MMSE, semantic fluency, TMT-B","all NS")]]],
+  model:"Model 2: age, sex, site, household size, employment, schooling, smoking, physical activity, MedDiet score, BMI, arrhythmia, diabetes, depression (+ intervention arm). Abstract reports LAVI→TMT-A as −0.13 (−0.22, −0.03)."}},
+
+{id:"austin",label:"Austin 2022 (MESA)",
+ meta:{title:"Left atrial function and arrhythmias in relation to small vessel disease on brain MRI: the Multi-Ethnic Study of Atherosclerosis",authors:"Austin TR, Jensen PN, Nasrallah IM, Habes M, Rashid T, Ware JB, Chen LY, Greenland P, … Bryan RN, Heckbert SR",journal:"J Am Heart Assoc. 2022;11(22):e026460",parent:"MESA — Multi-Ethnic Study of Atherosclerosis, Atrial Fibrillation ancillary study (Exam 6)",design:"Cross-sectional; echo + 14-day ECG patch 2016–18, brain MRI a median 17 months later",n:"967 (915 in LA echo analyses)",age:"72 ± 8 y",female:"53%",extra:"26% Black, 12% Chinese-American, 22% Hispanic, 40% White; no prior stroke/TIA."},
+ cells:{
+  la_size:["LA volume index: maximum biplane LA volume (method of disks, apical 4- and 2-chamber) / BSA","Per 1-SD increase; mean 27.7 ± 8.4 mL/m²"],
+  la_strain:["LA reservoir strain (GE EchoPAC speckle tracking; sum of booster + conduit), per 1-SD decrease","Mean 24.0 ± 5.7%"],
+  vol:["Total gray matter volume (primary atrophy measure)","Total brain and total white matter volume (secondary); 3T, ICV-adjusted"],
+  cvd:["White matter hyperintensity volume (log; % difference)","Cerebral microbleeds — presence and count (QSM/SWI deep-learning segmentation, radiologist review)"],
+  dti:["Mean white matter fractional anisotropy (z-score)"],
+  demo:["Age","Sex","Field center","Race and ethnicity","Education","Family income","Neighborhood socioeconomic status"],
+  cvrisk:["BMI","Smoking status and pack-years","Systolic and diastolic BP","Treated hypertension","HDL and LDL cholesterol","Lipid-lowering medication","Diabetes","eGFR"]},
+ result:{cls:"pos",lead:"Fully adjusted models (Figure 2 / Figure S1)",
+  grp:[["LA volume index, per 1-SD increase",[e("WM fractional anisotropy — SD","−0.07 (−0.13 to −0.01)",1),e("Microbleed presence — PR","1.17 (1.08–1.27)",1),e("WMH volume — % diff","3.50 (−4.48 to 12.15)"),e("Microbleed count (if ≥1) — %","3.38 (−3.32 to 10.54)"),e("Gray matter volume — mL","−0.55 (−2.54 to 1.45)")]],
+   ["LA reservoir strain, per 1-SD decrease",[e("Microbleed count (if ≥1) — %","7.65 (1.46 to 13.45)",1),e("Total brain volume — mL","−3.12 (−5.73 to −0.51)",1),e("Microbleed presence — PR","0.98 (0.88–1.09)"),e("WM fractional anisotropy — SD","0.00 (−0.06 to 0.06)"),e("WMH volume — % diff","−1.95 (−10.53 to 5.97)"),e("Gray matter volume — mL","−2.00 (−4.04 to 0.05)")]]],
+  model:"Adjusted for age, sex, field center, race/ethnicity, ICV (volumes), smoking, BMI, HDL, LDL, eGFR, SBP, DBP, diabetes, HTN medication, neighborhood SES, education, income."}},
+
+{id:"bertelsen",label:"Bertelsen 2022",
+ meta:{title:"Left atrial remodeling and cerebrovascular disease assessed by magnetic resonance imaging in continuously monitored patients",authors:"Bertelsen L, Diederichsen SZ, Frederiksen KS, Haugan KJ, Brandes A, Graff C, … Svendsen JH",journal:"PDF on file: ESC Congress 2021 abstract, Eur Heart J. 2021;42(Suppl 1):ehab724.0226",parent:"LOOP Study (Danish implantable-loop-recorder AF screening trial) — MRI substudy",design:"Cross-sectional",n:"200 (172 sinus rhythm only, 28 with ILR-detected AF)",age:"≥70 y (mean not reported in abstract)",female:"Not reported in abstract",extra:"Stroke risk factors (HTN, DM, HF and/or prior stroke), no known AF; ILR monitoring ≥3 months."},
+ cells:{
+  la_size:["Cardiac MRI LA maximum volume (LAmax) and minimum volume (LAmin), per 10 mL/m²"],
+  la_other:["CMR LA phasic function, per 5%:","LA total emptying fraction (LATEF)","LA passive emptying fraction (LAPEF)","LA active emptying fraction (LAAEF)"],
+  cvd:["Brain MRI white matter lesions: Fazekas score 0 vs ≥1 (87% ≥1)","Lacunar infarcts 0 vs ≥1 (45%)"],
+  demo:["Sex","Age"],
+  cvrisk:["Diabetes","Hypertension","Heart failure","Prior stroke/TIA"],
+  af:["Stratified by ILR-documented sinus rhythm vs any AF during 3 months of continuous monitoring"]},
+ result:{cls:"pos",lead:"Multivariable logistic regression, OR (95% CI); sinus-rhythm group (n=172) unless noted",
+  grp:[["Fazekas ≥1",[e("LAPEF, per 5%","0.51 (0.27–0.86)",1),e("LATEF, per 5%","0.67 (0.43–1.01)"),e("LAAEF, per 5%","0.83 (0.60–1.14)"),e("LAmax, per 10 mL/m²","0.98 (0.69–1.43)"),e("LAmin, per 10 mL/m²","1.23 (0.72–2.29)")]],
+   ["Lacunar infarct ≥1",[e("LAmax, per 10 mL/m²","1.38 (1.07–1.82)",1),e("LAmin, per 10 mL/m²","1.48 (1.03–2.17)",1),e("LATEF / LAPEF / LAAEF","0.87 / 1.00 / 0.89 (all NS)"),e("All participants (n=200): LAmax","1.43 (1.12–1.85)",1),e("All participants (n=200): LAmin","1.58 (1.13–2.27)",1)]],
+   ["AF subgroup (n=28)",[e("LAmin → lacunes","3.94 (1.12–25.00)",1),e("Other LA measures","NS")]]],
+  model:"Adjusted for sex, age, diabetes, hypertension, heart failure and history of stroke/TIA; stratified by rhythm."}},
+
+{id:"homssi",label:"Homssi 2023",
+ meta:{title:"Association between left atrial volume index and infarct volume in patients with ischemic stroke",authors:"Homssi M, Balaji V, Zhang C, Shin J, Gupta A, Kamel H",journal:"Front Neurol. 2023;14:1265037",parent:"CAESAR — Cornell AcutE Stroke Academic Registry (NewYork-Presbyterian/Weill Cornell), 2011–2016",design:"Retrospective cross-sectional analysis of a prospective registry",n:"545 (380 in adjusted models)",age:"65.3 ± 14.9 y (LAVI ≤34) / 74.1 ± 12.9 y (LAVI >34)",female:"≈half",extra:"Acute ischemic stroke patients; AF prevalence 32%; 44% of cardioembolic subtype in LAVI >34 group."},
+ cells:{
+  la_size:["Clinical TTE LA volume index (automated measurement, Philips Xcelera), study closest to the index stroke","Continuous, per 1 mL/m²; mean 36.1 ± 16.2 mL/m²"],
+  cvd:["Total acute infarct volume on diffusion-weighted MRI, manually segmented in 3D Slicer, log-transformed"],
+  demo:["Age","Sex","Race"],
+  cvrisk:["Heart failure","Diabetes","Hypertension","Coronary artery disease","Valvular disease"],
+  af:["Atrial fibrillation"],
+  lv:["LV ejection fraction (sensitivity model only)"]},
+ result:{cls:"mixed",lead:"Linear regression of log infarct volume on LAVI (per mL/m²); no CIs reported",
+  est:[e("Model 3 (demographics + comorbidities incl. AF), n=380","β 0.021 (≈2.1%/mL/m²), p=0.006",1),e("Model 2 (age, sex, race), n=380","β 0.024, p=0.001",1),e("Sensitivity: + LVEF, n=286","β 0.016, p=0.077"),e("Unadjusted, n=545","β 0.018, p=0.002",1)],
+  model:"Association independent of AF and HF, but attenuated to non-significance after adding LVEF."}},
+
+{id:"ji",label:"Ji 2024",
+ meta:{title:"Heart-brain mapping: cardiac atrial function is associated with distinct cerebral regions with high free water in older adults",authors:"Ji F, Wei JLK, Leng S, Zhong L, Tan RS, Gao F, … Zhou JH, Koh AS",journal:"J Cereb Blood Flow Metab. 2024;44(7):1218–1230",parent:"Cardiac Aging Study (CAS), National Heart Centre Singapore — community and Singapore Chinese Health Study participants",design:"Cross-sectional",n:"56",age:"73.2 ± 3.6 y (range 68–79)",female:"43% (24/56)",extra:"Cognitively normal (MMSE ≥24), no known CVD, sinus rhythm."},
+ cells:{
+  la_strain:["Cardiac MRI feature tracking (3T cine, 2- and 4-chamber; in-house algorithm)","Reservoir strain εs, conduit strain εe, booster strain εa","Strain rates SRs, SRe, SRa"],
+  vol:["FreeSurfer v6 cortical thickness (vertex-wise) — no association with LA indices"],
+  dti:["Free-water imaging (bi-tensor model): gray-matter free water (surface-based) and white-matter free water on TBSS skeleton","Free-water-corrected tissue fractional anisotropy (FAt)"],
+  neuro:["Executive: category fluency, D-KEFS design fluency, Trail Making B","Attention: Digit Span, Spatial Span (WMS-III)","Processing speed: Symbol Digit Modalities, Trail Making A (T-scores)"],
+  demo:["Age","Sex","Education","Ethnicity","Total brain volume"],
+  cvrisk:["Framingham 10-year office-based CVD risk score"],
+  af:["AF excluded (sinus rhythm on resting ECG; no known AF)"]},
+ result:{cls:"mixed",lead:"Voxel/vertex-wise GLMs (p<0.01 FWE); effect sizes not reported for maps",
+  grp:[["LA strain → brain free water",[e("Lower εs, εe, SRs → higher GM free water (orbitofrontal, R temporal, fusiform)","significant (FWE p<0.01)",1),e("Lower εs, εe, SRs → higher WM free water (R SLF, internal capsule, superior corona radiata)","significant (FWE p<0.01)",1),e("Booster strain, SRe, SRa","no association"),e("Cortical thickness; WM tissue FA","no association")]],
+   ["Cognition",[e("LA indices → cognitive domains","no direct association"),e("LA-related GM free water → executive function (r)","−0.37 (−0.62 to −0.11), p=0.0053",1),e("LA-related WM free water → executive function (r)","−0.36 (−0.61 to −0.11), p=0.006",1)]]],
+  model:"GLMs adjusted for age, sex, education, ethnicity, total brain volume and Framingham risk score; partial correlations for cognition adjusted for age, sex, education, tissue volume."}},
+
+{id:"liao",label:"Liao 2024",
+ meta:{title:"Risk factors of atrial fibrillation complicated with cognitive impairment and the relationship between cardiac function parameters and the degree of cognitive impairment",authors:"Liao F, Hou Z",journal:"Clinics (São Paulo). 2024;79:100453",parent:"None (single center, First People’s Hospital of Pinghu City, Zhejiang, China; Jan 2020 – May 2022)",design:"Cross-sectional",n:"120 (all with AF; 89 with cognitive impairment)",age:"61.8 ± 9.3 y",female:"55%",extra:"All participants had AF (paroxysmal, persistent or permanent)."},
+ cells:{
+  la_size:["TTE LA diameter (parasternal long axis)","LA (maximum) volume index","LAD ≈33 vs ≈30 mm and LAVI ≈22 vs ≈19.5 mL/m² in impaired vs unimpaired (Fig. 1)"],
+  neuro:["Montreal Cognitive Assessment (MoCA <26 = cognitive impairment)","MoCA domains: orientation, visuospatial/executive, naming, memory, attention, language, abstraction"]},
+ result:{cls:"unadj",lead:"No adjusted estimate for any LA measure",
+  est:[e("LAD and LAVI, impaired vs unimpaired (t-test)","both higher, p<0.0001",1),e("LAD and LAVI vs total MoCA (Spearman)","negative, p<0.001 (r not tabulated)",1),e("LAD and LAVI vs attention, orientation, memory, visuospatial/executive","negative, p<0.001",1)],
+  model:"The multivariable logistic model (age, occupation, education, smoking, drinking, HF, SBP, DBP, TC, TG, CRP, FT4, FT3, D-dimer) did not include LA measures, so all LA findings are unadjusted."}},
+
+{id:"ohlrogge",label:"Ohlrogge 2024/25",
+ meta:{title:"Subtle signs of atrial cardiomyopathy and left ventricular diastolic dysfunction are associated with reduced cognitive function: results from the Hamburg City Health Study",authors:"Ohlrogge AH, Camen S, Nagel L, Brederecke J, Jensen M, … Thomalla G, Schnabel RB",journal:"Clin Res Cardiol. Published online Dec 2024 (doi:10.1007/s00392-024-02581-5)",parent:"HCHS — Hamburg City Health Study (population-based, Hamburg residents aged 45–74)",design:"Cross-sectional",n:"7,852 (brain MRI subgroup 1,918)",age:"Median 62 y (IQR 55–69)",female:"51.6%",extra:"Prior stroke and severe depression excluded; AF 5.2%."},
+ cells:{
+  la_size:["Maximum LA volume index, biplane disk summation (apical 4- and 2-chamber), BSA-indexed","Median 25.2 mL/m²; per 1-SD"],
+  la_strain:["LA global peak strain, 2D speckle tracking (Siemens syngo SC2000 v4.0), apical 4-chamber","Median 38%; per 1-SD"],
+  la_other:["LA ejection fraction = (LAVmax − LAVmin)/LAVmax","(Also LV diastolic: E/A, E/e′)"],
+  cvd:["White matter hyperintensity load (total, periventricular, deep) — BIANCA/LOCATE on 3T FLAIR + T1, log % of brain volume"],
+  neuro:["Animal Naming Test","Trail Making A and B (seconds; lower = better)","10-word learning test: immediate (sum) and delayed recall"],
+  demo:["Age","Sex","Education (ISCED)"],
+  cvrisk:["Hypertension","Diabetes","Current smoking","BMI","Total cholesterol","Heart rate","Prior MI","Heart failure"],
+  af:["Atrial fibrillation (history, study ECG, 7-day Holter in a subset)","Sensitivity analysis excluding AF"],
+  lv:["LV ejection fraction","Interventricular septal thickness"]},
+ result:{cls:"pos",lead:"Model 3 (fully adjusted), β per 1-SD increase",
+  grp:[["LA global peak strain",[e("Trail Making B (s)","−0.017 (−0.028 to −0.007), p=0.001",1),e("Word-list immediate recall","0.108 (0.021 to 0.195), p=0.02",1),e("Trail Making A (s)","−0.009 (−0.021 to 0.004), p=0.18"),e("Animal Naming","0.043 (−0.168 to 0.254), p=0.69"),e("Delayed recall","0.018 (−0.028 to 0.064), p=0.44"),e("WMH load","−0.01 (−0.074 to 0.053), p=0.75")]],
+   ["LA volume index",[e("Animal Naming","−0.089 (−0.273 to 0.095)"),e("Trail Making A / B","−0.004 / 0 (NS)"),e("Word list sum / recall","0.061 / −0.016 (NS)"),e("WMH load","−0.009 (−0.057 to 0.039)")]],
+   ["LA ejection fraction",[e("All cognitive tests","NS"),e("WMH load","0.009 (−0.036 to 0.055)")]]],
+  model:"Model 3: age, sex, education, HTN, DM, smoking, BMI, total cholesterol, heart rate, AF, prior MI, HF, LVEF, septal thickness. The abstract quotes LA strain → TMT-A as significant (model 2), but Table 2 shows p=0.18."}},
+
+{id:"wang25",label:"Wang 2025 (ARIC)",
+ meta:{title:"Association of left atrial function with vascular brain injury: the Atherosclerosis Risk in Communities study",authors:"Wang W, Lutsey PL, Inciardi RM, Reyes JL, Mosley TH, Johansen MC, Gottesman RF, Alonso A, Jack CR Jr, Solomon SD, Shah AM, Wasserman BA, Chen LY",journal:"Eur J Neurol. 2025;32(1):e16549",parent:"ARIC — Atherosclerosis Risk in Communities (visit 5 echo + ARIC-NCS brain MRI)",design:"Cross-sectional, sampling-weighted",n:"1,488",age:"76 ± 5 y",female:"60%",extra:"27% Black; free of dementia, stroke and AF."},
+ cells:{
+  la_strain:["2D speckle tracking (Philips QLAB 13.0)","LA reservoir, conduit and contractile strain (absolute values)","Quartiles: lowest vs highest (reference)"],
+  cvd:["Cerebral microbleeds (any, subcortical, lobar) on GRE T2*","Brain infarcts (any, lacunar, cortical) on FLAIR","WMH volume (log2), Mayo algorithm; 3T"],
+  demo:["Age","Sex","Race/center","Education"],
+  cvrisk:["APOE ε4","Systolic BP","Antihypertensives","BMI","Diabetes","HDL and LDL","Smoking","CHD","Heart failure","Anticoagulant use","(+ ICV for WMH)"],
+  lv:["LV ejection fraction","LV mass index"],
+  af:["Prevalent AF excluded"]},
+ result:{cls:"mixed",lead:"Model 3 (fully adjusted), lowest vs highest quartile",
+  grp:[["≥1 cerebral microbleed — OR",[e("Reservoir strain","1.78 (1.42–2.22)",1),e("Conduit strain","1.52 (1.22–1.90)",1),e("Contractile strain","1.03 (0.82–1.28)"),e("Subcortical: reservoir / conduit","1.60 (1.26–2.03) / 1.55 (1.23–1.96)",1),e("Lobar: reservoir / contractile","1.50 (1.05–2.14) / 1.64 (1.16–2.30)",1)]],
+   ["≥1 brain infarct — OR",[e("Conduit strain","1.51 (1.22–1.88)",1),e("Reservoir strain","1.08 (0.86–1.34)"),e("Contractile strain (inverse)","0.79 (0.64–0.97)",1),e("Lacunar: conduit","1.57 (1.22–2.03)",1),e("Cortical: contractile (inverse)","0.72 (0.54–0.97)",1)]],
+   ["WMH volume — β (log2)",[e("Reservoir","0.03 (−0.11 to 0.17)"),e("Conduit","−0.02 (−0.15 to 0.12)"),e("Contractile","0.11 (−0.02 to 0.24)")]]],
+  model:"Model 3: age, sex, race/center, education, APOE ε4, SBP, antihypertensives, BMI, DM, HDL, LDL, smoking, CHD, HF, anticoagulants, LA volume index, LVEF, LV mass index."}},
+
+{id:"tan",label:"Tan 2025",
+ meta:{title:"Left atrial myocardial mechanics: association with cognitive dysfunction, cerebrovascular disease, and circulating biomarkers",authors:"Tan ESJ, Hilal S, Chan SP, Sim MA, Lai MKP, … Richards AM, Chen C, Ling LH",journal:"J Am Heart Assoc. 2025;14:e036931",parent:"Singapore memory-clinic cohort (Memory Aging and Cognition Centre, National University Health System) — cardiac substudy 2015–2020",design:"Cross-sectional",n:"251",age:"75 ± 8 y",female:"59%",extra:"No AF; 71% cognitively impaired (37% dementia, 14% moderate CIND, 20% mild CIND); 58% of impairment vascular (VCI)."},
+ cells:{
+  la_strain:["2D speckle tracking (GE EchoPAC AFI), 12 segments, biplane apical views","LA reservoir (LASr), conduit (LAScd) and contractile (LASct) strain","Tertiles: lowest (T1) vs highest (T3, reference)"],
+  vol:["Visually graded hippocampal atrophy (≥ moderate)"],
+  cvd:["Cortical infarcts, lacunes, cerebral microinfarcts (FLAIR/T2)","Cerebral microbleeds (BOMBS)","WMH: ARWMC scale and modified Fazekas"],
+  neuro:["MMSE, MoCA","7-domain battery (executive, attention, language, visuomotor speed, visuoconstruction, verbal and visual memory), z-scores","Adjudicated CIND/dementia; vascular vs neurodegenerative subtype"],
+  demo:["Age","Sex","Education level"],
+  cvrisk:["BMI","CV risk-factor burden (hypertension, diabetes, hyperlipidemia, smoking)"],
+  lv:["LV mass index","LV ejection fraction"],
+  af:["AF excluded at entry (15 excluded)"]},
+ result:{cls:"mixed",lead:"Fully adjusted models, lowest vs highest tertile",
+  grp:[["Cognitive outcomes — aOR (Model C)",[e("LAScd → moderate CIND/dementia","2.07 (0.93–4.64), p=0.076"),e("LASr → moderate CIND/dementia","1.11 (0.51–2.42)"),e("LASct → moderate CIND/dementia","0.63 (0.29–1.34)"),e("LAScd → VCI vs neurodegenerative","4.22 (1.59–11.22), p=0.004",1),e("LASr → VCI","1.82 (0.74–4.44)"),e("LAScd → MMSE (β)","−1.92 (−3.77 to −0.07)",1),e("LAScd → memory z (β)","−0.61 (−1.14 to −0.07)",1)]],
+   ["Neuroimaging — adjusted rate ratio",[e("LASr: cortical infarcts / lacunes","5.08 (1.11–23.26) / 2.23 (1.40–3.55)",1),e("LASr: microinfarcts / microbleeds","2.59 (1.46–4.60) / 1.36 (1.12–1.65)",1),e("LAScd: cortical infarcts / lacunes","4.40 (1.22–15.86) / 4.06 (2.35–7.03)",1),e("LAScd: microinfarcts / microbleeds","6.28 (2.92–13.49) / 1.35 (1.12–1.62)",1),e("ARWMC β: LASr / LAScd","1.56 (0.43–2.69) / 1.87 (0.70–3.05)",1),e("LASct: microbleeds (inverse)","0.75 (0.63–0.90)",1)]],
+   ["Atrophy — aOR",[e("LAScd → ≥ moderate hippocampal atrophy","4.29 (1.48–12.45)",1),e("LASct → hippocampal atrophy (inverse)","0.32 (0.13–0.78)",1)]]],
+  model:"Cognitive models (C): LAVI, LVMI, LVEF, age, sex, BMI, CV risk-factor burden, education. Neuroimaging and atrophy models: age, sex, HTN, DM, hyperlipidemia, smoking."}},
+
+{id:"pradella",label:"Pradella 2025",
+ meta:{title:"MRI investigation of the association of left atrial and left atrial appendage hemodynamics with silent brain infarction",authors:"Pradella M, Baraboo JJ, Prabhakaran S, Zhao L, Hijaz T, … Markl M, Greenland P",journal:"J Magn Reson Imaging. 2025;61(1):276–286",parent:"MESA — Multi-Ethnic Study of Atherosclerosis, single-site (Northwestern, Chicago) 4D-flow substudy of the AF ancillary study",design:"Cross-sectional (brain MRI 2018–19, cardiac MRI 2018–20)",n:"125",age:"72.3 ± 7.2 y",female:"55%",extra:"42% White, 34% Asian American, 25% Black; AF history 12%; no prior stroke/TIA; SBI in 26 (20.8%)."},
+ cells:{
+  la_size:["Cine bSSFP short-axis LA volumes (1.5T): LAVmax, LAVmin and BSA-indexed LAVImax, LAVImin"],
+  la_other:["4D-flow MRI of LA and LA appendage: blood stasis (% voxels <10 cm/s) and peak velocity (top 5% of voxels, cm/s)","Total LA emptying fraction from cine volumes"],
+  cvd:["Silent brain infarcts on 3T T1/T2/FLAIR (≥3 mm), read by neuroradiologists (κ = 0.93)"],
+  demo:["Age","Sex","Race"],
+  cvrisk:["Hypertension","Diabetes","BMI","Alcohol","Smoking","CHA₂DS₂-VASc score"],
+  af:["History of AF incl. 14-day Zio patch monitoring (candidate covariate)"],
+  lv:["LV end-diastolic, end-systolic and stroke volume, LVEF (candidates)"]},
+ result:{cls:"pos",lead:"Automatic stepwise multivariable logistic regression for SBI",
+  grp:[["Retained in final model",[e("LAA peak velocity, per cm/s — OR","0.87 (0.81–0.93), p<0.001",1),e("Age, per 10 y — OR","1.99 (1.30–3.04), p=0.002",1)]],
+   ["Not retained (univariable OR shown)",[e("LAVImax / LAVImin","1.04 (1.01–1.08) / 1.06 (1.01–1.11)"),e("LA emptying fraction","0.96 (0.93–1.00)"),e("LA stasis / LA peak velocity","1.04 (1.01–1.08) / 0.90 (0.83–0.98)"),e("LAA stasis","1.06 (1.01–1.11)")]]],
+  model:"Candidate pool: age, sex, race, HTN, DM, BMI, AF history, alcohol, smoking, CHA₂DS₂-VASc, LA/LAA stasis and velocity, LA volumes, LAEF, LV parameters. Only age and LAA peak velocity were selected."}},
+
+{id:"masini",label:"Masini 2025 (ARIC)",
+ meta:{title:"Markers of left atrial myopathy: prognostic usefulness for ischemic stroke and dementia in people in sinus rhythm",authors:"Masini G, Wang W, Ji Y, Eaton A, Inciardi RM, Soliman EZ, Passman RS, Solomon SD, Shah AM, De Caterina R, Chen LY",journal:"Stroke. 2025;56(4):858–867",parent:"ARIC — Atherosclerosis Risk in Communities (visit 5 baseline, follow-up to 2020)",design:"Prospective cohort; median follow-up 8.3 y",n:"4,712 (193 ischemic strokes, 769 dementia)",age:"74 ± 5 y",female:"59%",extra:"21% Black; no prior AF or stroke."},
+ cells:{
+  la_size:["LA maximal volume index (biplane disk method, BSA-indexed), per 1-SD (7.7 mL/m²) increase","LA enlargement >34 mL/m²"],
+  la_strain:["2D speckle tracking (QLAB): LA reservoir (LAr), conduit and contraction strain, per 1-SD decrease","LAr <28.9% (Youden-optimal cut-off)"],
+  la_other:["ECG P-wave markers: prolonged P-wave duration (>120 ms), advanced interatrial block, abnormal P terminal force in V1 (≥4000 µV·ms), abnormal P-wave axis","NT-proBNP (log; >211 ng/L)"],
+  stroke:["Adjudicated fatal and nonfatal ischemic stroke (NINDS National Survey of Stroke criteria; thrombotic or non-carotid embolic)"],
+  dementia:["Dementia from ARIC-NCS in-person assessment, TICSm / Six-Item Screener / informant interview, ICD hospital and death codes","Primary outcome: composite of ischemic stroke or dementia"],
+  demo:["Age","Sex","Race / field center"],
+  cvrisk:["Smoking","Diabetes","Hypertension","Coronary heart disease","Peripheral artery disease","Heart failure"],
+  af:["Prevalent AF excluded","Incident AF as time-varying covariate (Model B)"],
+  lv:["LV ejection fraction","E/e′ ratio"]},
+ result:{cls:"pos",lead:"Model B (fully adjusted) Cox HR for ischemic stroke or dementia",
+  grp:[["LA strain (per 1-SD decrease)",[e("LA reservoir","1.22 (1.13–1.33), p<0.001",1),e("LA reservoir <28.9% vs ≥28.9%","1.54 (1.33–1.79), p<0.001",1),e("LA conduit","1.12 (1.03–1.21), p=0.007",1),e("LA contraction","1.14 (1.06–1.23), p<0.001",1)]],
+   ["LA size",[e("LAVi, per 1-SD increase","1.10 (1.03–1.18), p=0.005",1),e("LAVi >34 mL/m²","1.13 (0.92–1.38), p=0.24")]],
+   ["Other LA myopathy markers",[e("log NT-proBNP","1.23 (1.13–1.33), p<0.001",1),e("NT-proBNP >211 ng/L","1.26 (1.08–1.47), p=0.004",1),e("Prolonged P-wave duration","1.14 (0.98–1.33)"),e("Advanced interatrial block","1.16 (0.79–1.69)"),e("Abnormal PTFV1","1.11 (0.95–1.29)"),e("Abnormal P-wave axis","1.20 (0.98–1.48)")]],
+   ["Discrimination (added to CHA₂DS₂-VASc variables)",[e("LA reservoir — ΔC statistic","0.010 (0.003–0.017)",1),e("LAVi — ΔC statistic","0.002 (−0.001 to 0.006)")]]],
+  model:"Model B: age, sex, race/center, smoking, DM, HTN, CHD, PAD, HF, LVEF, E/e′ + incident AF (time-varying). Components (Table S9): only LAr <28.9% and prolonged P-wave were associated with ischemic stroke alone; echo LA measures and NT-proBNP with dementia."}},
+{id:"dehghan",label:"Dehghan 2026 (ARIC-NCS)",
+ meta:{title:"Left ventricular remodeling and diastolic dysfunction predict cognitive decline in older adults",authors:"Dehghan A, Giugni FR, Bartholdy KV, Yang Y, Lamberson V, Wang W, Claggett B, Hajjar I, Mosley T, Palta P, Chen LY, Shah AM",journal:"Alzheimers Dement. 2026;22(2):e71089",parent:"ARIC-NCS — Atherosclerosis Risk in Communities Neurocognitive Study; echo at visit 5 (2011–13), cognition at visits 5, 6, 7 and 9",design:"Prospective cohort; baseline (cross-sectional) and longitudinal cognitive change over median 8.0 y",n:"4,957 at visit 5 (3,135 / 2,867 / 1,716 returned at visits 6 / 7 / 9)",age:"75.2 ± 5.0 y",female:"59.5%",extra:"19.8% Black. Free of heart failure, dementia and stroke at visit 5; prevalent AF 4.6% (not excluded). Each echo measure modelled separately, per 1-SD worse value."},
+ cells:{
+  la_size:["2D TTE LA volume by method of disks (apical 4- and 2-chamber), indexed to BSA (LAVI), per 1-SD higher"],
+  la_strain:["LA reservoir strain (LASr), apical 4-chamber, peak strain in ventricular systole, R-R gated; per 1-SD lower"],
+  neuro:["10-test ARIC-NCS battery → latent factor scores: memory (DWR, Logical Memory I/II, incidental learning), executive function (Trails A/B, DSS), language (word fluency, Boston Naming)","Global composite = mean of 3 domains; level at visit 5 and rate of change to visit 9"],
+  demo:["Age","Sex","Study center","Education","Household income <$35,000","Area Deprivation Index"],
+  cvrisk:["APOE ε4","BMI","eGFR","Hypertension","Diabetes","Coronary artery disease","Stroke (time-varying)","Smoking","Alcohol","Depression"],
+  af:["Prevalent AF (ECG or ICD-9 427.31/427.32), time-varying covariate"]},
+ result:{cls:"pos",lead:"Fully adjusted linear mixed models, per 1-SD worse echo measure; β for level at visit 5 and for echo × time (rate of decline). Point estimates are in Table S1 (not in the PDF).",
+  grp:[["LAVI (higher)",[e("Global cognition — level","worse, p<0.001",1),e("Global cognition — rate of decline","faster, p=0.002",1),e("Executive function — level / decline","p=0.002 / p=0.007",1),e("Language — level / decline","p=0.009 / p=0.372",1),e("Memory — level / decline","p=0.116 / p=0.116")]],
+   ["LA reservoir strain (lower)",[e("Global cognition — level","worse, p<0.001",1),e("Global cognition — rate of decline","faster, p<0.001",1),e("Executive function — level / decline","p<0.001 / p<0.001",1),e("Language — level / decline","p=0.018 / p=0.104",1),e("Memory — level / decline","p=0.028 / p=0.331",1)]]],
+  model:"Age, sex, center, education, APOE ε4 (baseline); income, ADI, BMI, eGFR, CAD, diabetes, stroke, AF, hypertension, depression, smoking, alcohol (time-varying). No LV adjustment (each echo measure modelled alone)."}},
+];
+
+
+/* Fully adjusted results per study × exposure–outcome pair.
+   st: A = associated (all fully adjusted tests significant, expected direction)
+       M = mixed (some significant, some not, or significant in the opposite direction)
+       N = null (no fully adjusted test significant)
+       U = unadjusted only
+   s in p(): 1 significant (expected direction), 0 not significant, -1 significant, opposite direction */
+function p(t,v,s){return {t,v,s:s||0}}
+const CTX={
+ silvar:{cohort:"HCHS-SOL",n:"1,047",design:"",setting:"",age:"64.1 ± 7.8",ageN:64.1,inf:"5.3%",infN:5.3,infT:"Brain infarct prevalence: 5.3%"},
+ karadag:{cohort:"—",n:"108",design:"CS",setting:"Geriatric clinic",age:"74.8 ± 6.9",ageN:74.8},
+ alosco:{cohort:"—",n:"50",design:"CS",setting:"Cardiology clinic",age:"64.5 ± 9.4",ageN:64.5},
+ russo13:{cohort:"CABL / NOMAS",n:"455",design:"CS",setting:"Community",age:"70.2 ± 10.1",ageN:70.2,inf:"15.4%",infN:15.4,infT:"Silent brain infarcts: 70/455 (15.4%)"},
+ cogswell:{cohort:"ARIC-NCS",n:"167",design:"CS",setting:"Community",age:"76.6 ± 5.1",ageN:76.6,ageT:"HFpEF without AF analysis group (whole sample of 1,527: 76.0 ± 5.3)",inf:"29.3%",infN:29.3,infT:"Subclinical cerebral infarcts: 49/167 (29.3%) in the HFpEF/no AF group; 290/1,527 (19.0%) overall"},
+ cermakova:{cohort:"CARDIA",n:"648",design:"Pro",setting:"Community",age:"50.4 ± 3.5",ageN:50.4,ageT:"Mean age at brain MRI (30.4 ± 3.5 y at echo)"},
+ yaghi:{cohort:"CHS",n:"2,335",design:"CS + Pro",setting:"Community",age:"72.0 ± 4.8",ageN:72.0,inf:"29.0%",infN:29.0,infT:"Prevalent MRI infarcts on initial MRI: 29.0%"},
+ habibi:{cohort:"MESA",n:"4,261",design:"Pro",setting:"Community",age:"61 ± 10",ageN:61,inf:"4.5% incident",infN:4.5,infT:"Incident ischemic stroke or TIA over 11.6 ± 3.5 y: 193/4,261 (4.5%; 134 strokes, 59 TIAs); no MRI infarct outcome"},
+ zhang:{cohort:"ARIC-NCS",n:"3,391",design:"CS + Pro",setting:"Community",age:"74.4 ± 5.1",ageN:74.4},
+ mannina:{cohort:"CABL",n:"270",design:"CS",setting:"Community",age:"69.1 ± 9.7",ageN:69.1,inf:"9.6%",infN:9.6,infT:"Silent brain infarcts: 26/270 (9.6%)"},
+ potter:{cohort:"Vic-ELF",n:"337",design:"CS",setting:"Screening trial",age:"70 (median)",ageN:70,ageT:"Median 70 (IQR 68–73)"},
+ rouch:{cohort:"CARDIA",n:"1,492",design:"Pro",setting:"Community",age:"≈55",ageN:55,ageT:"Mean age ≈55 y at year-30 echo and cognition (30.1 ± 3.5 y at year-5 echo). LAVi sample 1,492 of 2,653."},
+ wang22:{cohort:"ARIC",n:"4,096",design:"Pro",setting:"Community",age:"75 ± 5",ageN:75},
+ bianco:{cohort:"ARIC-NCS",n:"407",design:"CS",setting:"Community",age:"76 ± 8",ageN:76,inf:"22.6%",infN:22.6,infT:"MRI infarcts 92/407: 58 subclinical (14.3%) plus 34 with a prior clinical stroke (8.4%)"},
+ casanova:{cohort:"PREDIMED-Plus",n:"510",design:"CS + Pro",setting:"Trial (MetS)",age:"65.1 ± 4.8",ageN:65.1},
+ austin:{cohort:"MESA",n:"967",design:"CS",setting:"Community",age:"72 ± 8",ageN:72},
+ homssi:{cohort:"CAESAR",n:"545",design:"CS",setting:"Acute stroke",age:"≈70",ageN:69.7,ageT:"Reported by LAVI group only: 65.3 ± 14.9 (≤34) and 74.1 ± 12.9 (>34); ≈70 overall",inf:"100%",infN:100,infT:"All participants had acute ischemic stroke (DWI infarct volume was the outcome)"},
+ ji:{cohort:"CAS Singapore",n:"56",design:"CS",setting:"Community",age:"73.2 ± 3.6",ageN:73.2},
+ liao:{cohort:"—",n:"120",design:"CS",setting:"AF patients",age:"61.8 ± 9.3",ageN:61.8},
+ ohlrogge:{cohort:"Hamburg",n:"7,852",design:"CS",setting:"Community",age:"62 (median)",ageN:62,ageT:"Median 62 (IQR 55–69)"},
+ wang25:{cohort:"ARIC",n:"1,488",design:"CS",setting:"Community",age:"76 ± 5",ageN:76,inf:"23%",infN:23,infT:"≥1 brain infarct: 344 (23%); lacunar 16%, cortical 9%"},
+ tan:{cohort:"Memory clinic",n:"251",design:"CS",setting:"Memory clinic",age:"75 ± 8",ageN:75,inf:"24%",infN:24,infT:"Lacunes 60 (24%); cortical infarcts 19 (8%); cerebral microinfarcts 28 (11%)"},
+ pradella:{cohort:"MESA",n:"125",design:"CS",setting:"Community",age:"72.3 ± 7.2",ageN:72.3,inf:"20.8%",infN:20.8,infT:"Silent brain infarcts: 26/125 (20.8%)"},
+ dehghan:{cohort:"ARIC-NCS",n:"4,957",design:"Pro",setting:"Community",age:"75.2 ± 5.0",ageN:75.2},
+ masini:{cohort:"ARIC",n:"4,712",design:"Pro",setting:"Community",age:"74 ± 5",ageN:74,inf:"4.1% incident",infN:4.1,infT:"Incident ischemic stroke over median 8.3 y: 193/4,712 (4.1%); no MRI infarct outcome"}
+};
+const P={
+ silvar:{
+  s_inf:{st:"N",t:[p("LA strain, per 1-SD lower → brain infarcts, OR","0.97 (0.63–1.49), p=0.873")]},
+  s_wmh:{st:"N",t:[p("LA strain, per 1-SD lower → WMH volume, β","0.015 (−0.058 to 0.089), p=0.683")]},
+  s_cog:{st:"N",t:[p("LA strain, per 1-SD lower → global cognition score, β","0.017 (−0.033 to 0.068), p=0.501")]},
+  v_inf:{st:"A",t:[p("LA minimum volume index, per 1-SD higher → brain infarcts, OR","1.52 (1.09–2.13), p=0.015",1)]},
+  v_wmh:{st:"N",t:[p("LA minimum volume index, per 1-SD higher → WMH volume, β","0.067 (−0.008 to 0.141), p=0.079")]},
+  v_cog:{st:"N",t:[p("LA minimum volume index, per 1-SD higher → global cognition score, β","−0.004 (−0.056 to 0.048), p=0.886")]},
+  s_cmb:{st:"A",t:[p("LA strain, per 1-SD lower → cerebral microbleeds, OR","1.43 (1.05–1.94), p=0.022",1)]},
+  v_cmb:{st:"N",t:[p("LA minimum volume index, per 1-SD higher → cerebral microbleeds, OR","0.81 (0.60–1.10), p=0.185")]},
+  s_dti:{st:"N",t:[p("LA strain, per 1-SD lower → white matter FA, β","−0.046 (−0.118 to 0.027), p=0.216")]},
+  v_dti:{st:"N",t:[p("LA minimum volume index, per 1-SD higher → white matter FA, β","−0.021 (−0.096 to 0.053), p=0.575")]}},
+ karadag:{
+  v_cog:{st:"A",t:[p("LAVI ≥34 vs <34 mL/m² → cognitive impairment (MMSE ≤25), OR","29.57 (3.34–261.81)",1)]}},
+ alosco:{
+  v_cog:{st:"M",t:[p("LA diameter → RBANS language, β","−0.45, p=0.04",1),p("→ delayed memory, β","−0.47, p=0.02",1),p("→ total index, β","−0.41, p=0.04",1),p("→ immediate memory, b (SE)","−7.14 (4.57), NS"),p("→ visuospatial/construction, b (SE)","−4.71 (5.70), NS"),p("→ attention, b (SE)","−3.40 (3.47), NS")]},
+  v_vol:{st:"N",t:[p("LA diameter → whole-brain volume, β","0.09, p=0.43")]}},
+ russo13:{
+  v_inf:{st:"M",t:[p("LAVmin per SD → silent brain infarct, OR","1.37 (1.04–1.80)",1),p("LAVmax per SD → silent brain infarct, OR","1.15 (0.88–1.50)")]},
+  v_wmh:{st:"M",t:[p("LAVmin per SD → log WMH volume, β","0.12, p<0.01",1),p("LAVmax per SD → log WMH volume, β","0.06, p=0.22")]}},
+ cogswell:{
+  v_inf:{st:"A",note:"Analysis restricted to participants with HFpEF and no prior AF (n=167).",t:[p("LA volume index per SD ↑ → subclinical cerebral infarct, OR","1.41 (1.00–2.00)",1)]}},
+ cermakova:{
+  v_wmh:{st:"M",note:"Outcome is abnormal white matter volume (FLAIR/T1/T2), Table S4. The one significant estimate points the opposite way.",t:[p("LAV per SD → little AWM vs none, OR","0.73 (0.54–0.97)",-1),p("LAV per SD → high AWM vs none, OR","0.92 (0.69–1.22)")]},
+  v_vol:{st:"N",t:[p("LAV per SD → gray matter, β (cm³)","−0.04 (−2.19 to 2.10)"),p("→ white matter, β","−1.92 (−4.44 to 0.62)"),p("→ total brain, β","−1.96 (−4.95 to 1.04)")]},
+  v_dti:{st:"A",t:[p("LAV per SD → white matter FA, β","−0.002 (−0.004 to −0.0004)",1)]}},
+ yaghi:{
+  v_inf:{st:"M",note:"Prevalent infarcts associated; incident infarcts on follow-up MRI not.",t:[p("LAD per cm → prevalent infarct, RR","1.20 (1.08–1.34)",1),p("→ prevalent nonlacunar infarct, RR","1.28 (1.06–1.54)",1),p("LA volume per mL → prevalent infarct, RR","1.02 (1.01–1.03)",1),p("LAD per cm → incident infarct, RR","1.004 (0.78–1.29)"),p("→ incident nonlacunar infarct, RR","0.98 (0.67–1.42)")]},
+  v_wmh:{st:"N",t:[p("LAD per cm → white matter grade, β","−0.08 (−0.17 to 0.01)"),p("LAD per cm → WMG worsening, β","−0.04 (−0.10 to 0.02)"),p("LA volume per mL → WMG, β","−0.01 (−0.02 to 0.01)")]}},
+ habibi:{
+  v_stk:{st:"N",note:"Outcome: incident ischemic stroke or TIA. LAVImin was associated before adding interim AF (Model 1 HR 1.18, 1.04–1.34).",t:[p("LAVImax per SD → ischemic stroke/TIA, HR","1.02 (0.88–1.18)"),p("LAVImin per SD → ischemic stroke/TIA, HR","1.09 (0.96–1.24)")]},
+  s_stk:{st:"N",note:"Outcome: incident ischemic stroke or TIA. Feature-tracking CMR strain; HR per SD.",t:[p("Peak longitudinal LA strain per SD → ischemic stroke/TIA, HR","1.11 (0.98–1.26)")]}},
+ zhang:{
+  v_cog:{st:"M",tag:"Δ",note:"Cross-sectional association with executive and global scores; no association with 5-year decline.",t:[p("LAE vs normal LA (AF-adjusted) → executive z","−0.07 (−0.14 to −0.01)",1),p("→ global cognition z","−0.06 (−0.13 to −0.01)",1),p("→ memory z","−0.01 (−0.08 to 0.06)"),p("→ language z","−0.03 (−0.10 to 0.04)"),p("→ 5-year change in global z","0.03 (−0.02 to 0.07)"),p("LAE with AF vs normal/no AF → global z","−0.24 (−0.38 to −0.10)",1),p("LAE without AF vs normal/no AF → global z","−0.04 (−0.11 to 0.02)")]}},
+ mannina:{
+  s_inf:{st:"A",note:"Scaling of the ORs is not stated in the letter.",t:[p("Reservoir strain → silent brain infarct, OR","2.43 (1.62–3.65)",1),p("Reservoir strain rate → SBI, OR","2.37 (1.64–3.44)",1),p("Early-diastolic (conduit) strain rate → SBI, OR","2.74 (1.69–4.46)",1),p("Late-diastolic (pump) strain rate → SBI, OR","2.98 (1.81–4.89)",1)]},
+  s_wmh:{st:"M",t:[p("Reservoir strain → WMH top quartile, OR","1.42 (0.98–2.05)"),p("Reservoir strain rate → WMH, OR","1.36 (0.95–1.95)"),p("Early-diastolic strain rate → WMH, OR","1.35 (1.00–1.82), p=0.053"),p("Late-diastolic strain rate → WMH, OR","1.37 (1.01–1.85)",1)]}},
+ potter:{
+  v_cog:{st:"U",t:[p("LAVI per 1 mL/m² ↑ → MCI (MoCA <26), OR","1.00 (0.98–1.03)")]},
+  s_cog:{st:"U",note:"LA reservoir strain available in 248 participants.",t:[p("LA reservoir strain per 1% → MCI, OR","0.98 (0.96–1.04)"),p("LA reservoir strain <24% → MCI, OR","0.66 (0.13–3.27)")]}},
+ rouch:{
+  v_cog:{st:"A",note:"Exposure contrasts: ≥1 SD greater 25-year LAVi increase, and year-30 LAVi ≥1 SD above the mean. Cognition measured once, at year 30. Results unchanged with further adjustment for CHF, CHD, AFib and TIA/stroke.",t:[p("25-y LAVi increase ≥1 SD → MoCA z","−0.28 vs −0.12, p=0.01",1),p("→ RAVLT z","−0.31 vs −0.20, p=0.11"),p("→ reversed Stroop z","−0.09 vs −0.18, p=0.21"),p("→ DSST z","−0.21 vs −0.18, p=0.67"),p("→ verbal fluency z","−0.12 vs −0.09, p=0.65"),p("→ composite z","−0.17 vs −0.15, p=0.61"),p("Year-30 LAVi ≥1 SD → MoCA and RAVLT","lower, p≤0.01",1),p("Year-30 LAVi ≥1 SD → DSST, Stroop, fluency","NS")]}},
+ wang22:{
+  v_dem:{st:"N",t:[p("LAVImax highest vs lowest quintile → dementia, HR","0.77 (0.58–1.02)"),p("LAVImin highest vs lowest quintile → dementia, HR","0.95 (0.71–1.28)")]},
+  s_dem:{st:"A",t:[p("Reservoir strain lowest vs highest quintile → dementia, HR","1.98 (1.42–2.75)",1),p("Conduit strain → dementia, HR","1.50 (1.09–2.06)",1),p("Contractile strain → dementia, HR","1.57 (1.16–2.14)",1)]}},
+ bianco:{
+  s_inf:{st:"A",note:"Models stratified by age tertile (T1 68, T2 76, T3 83 y); subclinical infarct cases had no clinical stroke history.",t:[p("LA GLS per 1% ↑ → subclinical infarct, OR — T1","0.32 (0.30–0.97)",1),p("— T2","0.58 (0.52–0.69)",1),p("— T3","0.75 (0.70–0.78)",1)]},
+  s_stk:{st:"A",note:"Prevalent (prior) adjudicated clinical ischemic stroke with MRI infarct; cross-sectional. Models stratified by age tertile.",t:[p("LA GLS per 1% ↑ → clinical stroke, OR — T1","0.21 (0.19–0.99)",1),p("— T2","0.50 (0.36–0.66)",1),p("— T3","0.56 (0.53–0.60)",1)]}},
+ casanova:{
+  v_cog:{st:"M",tag:"Δ",t:[p("LAVI per SD → baseline scores (all tests), β","all CIs cross 0"),p("LAVI per SD → 2-year change in Trail Making A, β","−0.12 (−0.22 to −0.02)",1),p("→ 2-year change in MMSE, fluency, Digit Span, TMT-B","all NS")]},
+  s_cog:{st:"M",tag:"Δ",t:[p("LA strain per SD → baseline scores (all tests), β","all CIs cross 0"),p("Peak (reservoir) strain → 2-year change in TMT-A, β","0.11 (0.02 to 0.20)",1),p("Peak strain → 2-year change in Digit Span, β","0.09 (0.00 to 0.17)"),p("Conduit strain → 2-year change in phonetic fluency, β","−0.09 (−0.17 to −0.02)",-1),p("→ 2-year change in MMSE, semantic fluency, TMT-B","all NS")]}},
+ austin:{
+  v_wmh:{st:"N",t:[p("LAVI per SD ↑ → WMH volume, % difference","3.50 (−4.48 to 12.15)")]},
+  s_wmh:{st:"N",t:[p("Reservoir strain per SD ↓ → WMH volume, % difference","−1.95 (−10.53 to 5.97)")]},
+  v_cmb:{st:"M",t:[p("LAVI per SD ↑ → any microbleed, PR","1.17 (1.08–1.27)",1),p("LAVI per SD ↑ → microbleed count, %","3.38 (−3.32 to 10.54)")]},
+  s_cmb:{st:"M",t:[p("Reservoir strain per SD ↓ → microbleed count, %","7.65 (1.46 to 13.45)",1),p("Reservoir strain per SD ↓ → any microbleed, PR","0.98 (0.88–1.09)")]},
+  v_vol:{st:"N",t:[p("LAVI per SD ↑ → gray matter volume, mL","−0.55 (−2.54 to 1.45)")]},
+  s_vol:{st:"M",t:[p("Reservoir strain per SD ↓ → total brain volume, mL","−3.12 (−5.73 to −0.51)",1),p("Reservoir strain per SD ↓ → gray matter volume, mL","−2.00 (−4.04 to 0.05)")]},
+  v_dti:{st:"A",t:[p("LAVI per SD ↑ → white matter FA, SD","−0.07 (−0.13 to −0.01)",1)]},
+  s_dti:{st:"N",t:[p("Reservoir strain per SD ↓ → white matter FA, SD","0.00 (−0.06 to 0.06)")]}},
+ homssi:{
+  v_inf:{st:"N",note:"Outcome is acute DWI infarct volume in ischemic stroke patients. Most-adjusted model adds LVEF (n=286); no CIs reported.",t:[p("LAVI per mL/m² → log infarct volume, β","0.016, p=0.077")]}},
+ ji:{
+  s_cog:{st:"N",t:[p("LA strain and strain rates → executive, attention, processing speed","no direct association")]},
+  s_dti:{st:"M",note:"Voxel-wise maps; effect sizes not reported.",t:[p("Lower reservoir and conduit strain, reservoir strain rate → higher GM and WM free water","significant (FWE p<0.01)",1),p("Booster strain and strain rates → free water","no association"),p("LA strain → WM tissue FA","no association")]},
+  s_vol:{st:"N",t:[p("LA strain → cortical thickness","no association")]}},
+ liao:{
+  v_cog:{st:"U",t:[p("LAD and LAVI, impaired vs unimpaired (t-test)","both higher, p<0.0001"),p("LAD and LAVI vs MoCA (Spearman)","negative, p<0.001")]}},
+ ohlrogge:{
+  v_wmh:{st:"N",t:[p("LAVI per SD → total WMH load, β","−0.009 (−0.057 to 0.039)"),p("→ deep WMH load, β","0.001 (−0.101 to 0.103)"),p("→ periventricular WMH load, β","−0.014 (−0.063 to 0.035)")]},
+  v_cog:{st:"N",t:[p("LAVI per SD → Animal Naming, β","−0.089 (−0.273 to 0.095)"),p("→ Trail Making A, β","−0.004 (−0.013 to 0.006)"),p("→ Trail Making B, β","0 (−0.01 to 0.011)"),p("→ word-list immediate recall, β","0.061 (−0.042 to 0.163)"),p("→ delayed recall, β","−0.016 (−0.063 to 0.031)")]},
+  s_wmh:{st:"N",t:[p("LA strain per SD → total WMH load, β","−0.01 (−0.074 to 0.053)"),p("→ deep WMH load, β","−0.033 (−0.164 to 0.097)"),p("→ periventricular WMH load, β","−0.007 (−0.067 to 0.054)")]},
+  s_cog:{st:"M",t:[p("LA strain per SD → Trail Making B (s), β","−0.017 (−0.028 to −0.007)",1),p("→ word-list immediate recall, β","0.108 (0.021 to 0.195)",1),p("→ Trail Making A (s), β","−0.009 (−0.021 to 0.004)"),p("→ Animal Naming, β","0.043 (−0.168 to 0.254)"),p("→ delayed recall, β","0.018 (−0.028 to 0.064)")]}},
+ wang25:{
+  s_inf:{st:"M",t:[p("Conduit strain lowest vs highest quartile → any infarct, OR","1.51 (1.22–1.88)",1),p("Reservoir strain → any infarct, OR","1.08 (0.86–1.34)"),p("Contractile strain → any infarct, OR","0.79 (0.64–0.97)",-1)]},
+  s_wmh:{st:"N",t:[p("Reservoir strain lowest vs highest quartile → log₂ WMH, β","0.03 (−0.11 to 0.17)"),p("Conduit strain → log₂ WMH, β","−0.02 (−0.15 to 0.12)"),p("Contractile strain → log₂ WMH, β","0.11 (−0.02 to 0.24)")]},
+  s_cmb:{st:"M",t:[p("Reservoir strain lowest vs highest quartile → any microbleed, OR","1.78 (1.42–2.22)",1),p("Conduit strain → any microbleed, OR","1.52 (1.22–1.90)",1),p("Contractile strain → any microbleed, OR","1.03 (0.82–1.28)")]}},
+ tan:{
+  s_inf:{st:"M",t:[p("Reservoir strain T1 vs T3 → cortical infarcts, aRR","5.08 (1.11–23.26)",1),p("→ lacunes, aRR","2.23 (1.40–3.55)",1),p("→ microinfarcts, aRR","2.59 (1.46–4.60)",1),p("Conduit strain → cortical infarcts, aRR","4.40 (1.22–15.86)",1),p("→ lacunes, aRR","4.06 (2.35–7.03)",1),p("→ microinfarcts, aRR","6.28 (2.92–13.49)",1),p("Contractile strain → cortical infarcts / lacunes / microinfarcts, aRR","1.23 / 0.98 / 1.59 (all NS)")]},
+  s_wmh:{st:"M",t:[p("Reservoir strain T1 vs T3 → ARWMC score, β","1.56 (0.43 to 2.69)",1),p("Conduit strain → ARWMC score, β","1.87 (0.70 to 3.05)",1),p("Contractile strain → ARWMC score, β","−0.15 (−1.25 to 0.96)")]},
+  s_cog:{st:"M",t:[p("Conduit strain T1 vs T3 → moderate CIND/dementia, aOR","2.07 (0.93–4.64)"),p("Reservoir strain → moderate CIND/dementia, aOR","1.11 (0.51–2.42)"),p("Contractile strain → moderate CIND/dementia, aOR","0.63 (0.29–1.34)"),p("Conduit strain → vascular vs neurodegenerative impairment, aOR","4.22 (1.59–11.22)",1),p("Conduit strain → MMSE, β","−1.92 (−3.77 to −0.07)",1),p("Conduit strain → memory z, β","−0.61 (−1.14 to −0.07)",1)]},
+  s_cmb:{st:"M",t:[p("Reservoir strain T1 vs T3 → microbleed burden, aRR","1.36 (1.12–1.65)",1),p("Conduit strain → microbleed burden, aRR","1.35 (1.12–1.62)",1),p("Contractile strain → microbleed burden, aRR","0.75 (0.63–0.90)",-1)]},
+  s_vol:{st:"M",t:[p("Conduit strain T1 vs T3 → ≥ moderate hippocampal atrophy, aOR","4.29 (1.48–12.45)",1),p("Contractile strain → hippocampal atrophy, aOR","0.32 (0.13–0.78)",-1)]}},
+ pradella:{
+  v_inf:{st:"N",t:[p("LAVmax, LAVmin, LAVImax, LAVImin → silent brain infarct","not selected in final stepwise model")]}},
+ masini:{
+  v_stk:{st:"N",t:[p("LAVi per SD ↑ → ischemic stroke, HR","NS")]},
+  v_dem:{st:"A",t:[p("LAVi per SD ↑ → dementia, HR","p<0.05",1),p("LAVi per SD ↑ → ischemic stroke or dementia (composite), HR","1.10 (1.03–1.18)",1)]},
+  s_stk:{st:"A",t:[p("LA reservoir <28.9% → ischemic stroke, HR","p<0.05",1),p("LA reservoir, conduit, contraction per SD ↓ → ischemic stroke, HR","NS")]},
+  s_dem:{st:"A",t:[p("LA reservoir, conduit, contraction strain → dementia, HR","p<0.05",1),p("LA reservoir per SD ↓ → ischemic stroke or dementia (composite), HR","1.22 (1.13–1.33)",1)]}},
+ dehghan:{
+  v_cog:{st:"A",tag:"Δ",note:"Per 1-SD higher LAVI; level at visit 5 and rate of change over median 8.0 y (4 visits). β values are in the paper's Table S1, not in the PDF.",t:[p("LAVI ↑ → global cognition, level","worse, p<0.001",1),p("→ global cognition, rate of decline","faster, p=0.002",1),p("→ executive function, level / decline","p=0.002 / p=0.007",1),p("→ language, level","p=0.009",1),p("→ language, decline","p=0.372"),p("→ memory, level / decline","p=0.116 / p=0.116")]},
+  s_cog:{st:"A",tag:"Δ",note:"Per 1-SD lower LA reservoir strain; level at visit 5 and rate of change over median 8.0 y. β values are in the paper's Table S1, not in the PDF.",t:[p("LASr ↓ → global cognition, level","worse, p<0.001",1),p("→ global cognition, rate of decline","faster, p<0.001",1),p("→ executive function, level / decline","p<0.001 / p<0.001",1),p("→ language, level","p=0.018",1),p("→ language, decline","p=0.104"),p("→ memory, level","p=0.028",1),p("→ memory, decline","p=0.331")]}}
+};
+
+const PAIRS=[
+ {k:"v_inf",ex:"LA volume",out:"Infarct",grp:"vol",core:1},
+ {k:"v_wmh",ex:"LA volume",out:"WMH",grp:"vol",core:1},
+ {k:"v_cog",ex:"LA volume",out:"Cognition",grp:"vol",core:1},
+ {k:"s_inf",ex:"LA strain",out:"Infarct",grp:"str",core:1},
+ {k:"s_wmh",ex:"LA strain",out:"WMH",grp:"str",core:1},
+ {k:"s_cog",ex:"LA strain",out:"Cognition",grp:"str",core:1},
+ {k:"v_stk",ex:"LA volume",out:"Clinical stroke",sub:"LA vol",grp:"stk"},
+ {k:"s_stk",ex:"LA strain",out:"Clinical stroke",sub:"LA strain",grp:"stk"},
+ {k:"v_dem",ex:"LA volume",out:"Dementia",sub:"LA vol",grp:"dem"},
+ {k:"s_dem",ex:"LA strain",out:"Dementia",sub:"LA strain",grp:"dem"},
+ {k:"v_cmb",ex:"LA volume",out:"Microbleeds",sub:"LA vol",grp:"cmb"},
+ {k:"s_cmb",ex:"LA strain",out:"Microbleeds",sub:"LA strain",grp:"cmb"},
+ {k:"v_vol",ex:"LA volume",out:"Brain volume / atrophy",sub:"LA vol",grp:"bvol"},
+ {k:"s_vol",ex:"LA strain",out:"Brain volume / atrophy",sub:"LA strain",grp:"bvol"},
+ {k:"v_dti",ex:"LA volume",out:"DWI",sub:"LA vol",grp:"dti"},
+ {k:"s_dti",ex:"LA strain",out:"DWI",sub:"LA strain",grp:"dti"}
+];
+const G2=[{g:"vol",n:"LA volume →",span:3,cls:"vol"},{g:"str",n:"LA strain →",span:3,cls:"str"},{g:"stk",n:"Clinical stroke",span:2,cls:"oth"},{g:"dem",n:"Dementia",span:2,cls:"oth"},{g:"cmb",n:"Microbleeds",span:2,cls:"oth"},{g:"bvol",n:"Brain volume",span:2,cls:"oth"},{g:"dti",n:"DWI",span:2,cls:"oth"}];
+const COV=[{k:"demo",n:"Demo /<br>SES"},{k:"cvrisk",n:"CV risk /<br>prior CVD"},{k:"af",n:"AFib"},{k:"lv",n:"LV<br>factors"}];
+const COVNAME={demo:"Demographics / SES",cvrisk:"CV risk / prior CVD",af:"AFib or evidence of AFib",lv:"LV factors"};
+const ST={A:"Associated",M:"Mixed",N:"Null",U:"Unadjusted"};
+const STC={A:"var(--assoc)",M:"var(--mixed)",N:"var(--null)",U:"var(--unadj)"};
+const ORDER={A:0,M:1,N:2,U:3};
+const PCOV={
+ silvar:{all:"age, sex, Hispanic/Latino heritage group, education, heart rate, BMI, SBP, antihypertensive medication, diabetes, smoking, alcohol, LDL, HDL, triglycerides, lipid-lowering medication, eGFR, LV end-diastolic mass index, LVEF, LV GLS, alternate LA measure."},
+ karadag:{all:"age ≥75, BMI, LDL, triglycerides, fasting glucose."},
+ alosco:{all:"age, sex, education, WTAR, BDI-II, LVEF, MR, EDV, HTN, DM, arrhythmia, thyroid disease, HF, CVD medication.",v_vol:"age, sex, education, WTAR, BDI-II, LVEF, MR, EDV, HTN, DM, arrhythmia, thyroid disease, HF, CVD medication, ICV."},
+ russo13:{v_inf:"age, HTN, DM, CAD, AF, LV mass, RWT, LVEF, LV diastolic dysfunction, mitral regurgitation.",v_wmh:"age, BMI, HTN, CAD, AF, LV mass, RWT, LVEF, LV diastolic dysfunction."},
+ cogswell:{all:"male sex."},
+ cermakova:{all:"age, sex, race, field center, education, ICV, SBP, DBP, BMI, total cholesterol, fasting glucose, smoking, sedentary time, alcohol, APOE ε4."},
+ yaghi:{all:"age, sex, Black race, BSA, echo–MRI interval, SBP, LDL, HDL, DM, CHD, smoking, AF, HF, oral anticoagulants, LVH, antihypertensives."},
+ habibi:{all:"age, sex, ethnicity, BMI, smoking, SBP, DBP, antihypertensives, total cholesterol, HDL, statin, diabetes, LV mass, interim incident AF (time-dependent)."},
+ zhang:{all:"age, sex, race/center, education, APOE ε4, smoking, BMI, SBP, DBP, antihypertensives, DM, stroke, CHD/MI, HF, anticoagulants; AF (LAE vs normal LA models)."},
+ mannina:{s_inf:"LV GLS.",s_wmh:"age, hypertension (+ LAVImin in the reservoir strain model)."},
+ potter:{all:"none (unadjusted)."},
+ rouch:{all:"age, sex, race, education, hypertension, diabetes, current smoking, obesity (additional model: + CHF, CHD, AFib, TIA/stroke)."},
+ wang22:{v_dem:"age, sex, race-center, education, APOE ε4, BMI, smoking, DM, SBP, antihypertensives, CHD, HF, anticoagulants, incident AF and stroke (time-varying), LVEF, LV mass index.",s_dem:"age, sex, race-center, education, APOE ε4, BMI, smoking, DM, SBP, antihypertensives, CHD, HF, anticoagulants, incident AF and stroke (time-varying), LAVImin, LVEF, LV mass index."},
+ bianco:{all:"CHA₂DS₂-VASc, NT-proBNP, hs-troponin T, LA EF, E/e′ ÷ LA GLS (stratified by age tertile)."},
+ casanova:{all:"age, sex, site, household size, employment, education, smoking, physical activity, MedDiet score, BMI, non-AF arrhythmia, diabetes, depression, intervention arm."},
+ austin:{all:"age, sex, field center, race/ethnicity, education, income, neighborhood SES, BMI, smoking, pack-years, SBP, DBP, treated HTN, HDL, LDL, lipid medication, DM, eGFR.",v_vol:"age, sex, field center, race/ethnicity, education, income, neighborhood SES, BMI, smoking, pack-years, SBP, DBP, treated HTN, HDL, LDL, lipid medication, DM, eGFR, ICV.",s_vol:"age, sex, field center, race/ethnicity, education, income, neighborhood SES, BMI, smoking, pack-years, SBP, DBP, treated HTN, HDL, LDL, lipid medication, DM, eGFR, ICV."},
+ homssi:{all:"age, sex, race, HF, DM, HTN, CAD, valvular disease, AF, LVEF."},
+ ji:{s_cog:"age, sex, education.",s_dti:"age, sex, education, ethnicity, total brain volume, Framingham 10-year CVD risk score.",s_vol:"age, sex, education, ethnicity, total brain volume, Framingham 10-year CVD risk score."},
+ liao:{all:"none (unadjusted)."},
+ ohlrogge:{all:"age, sex, education, HTN, DM, smoking, BMI, total cholesterol, heart rate, AF, prior MI, HF, LVEF, septal thickness."},
+ wang25:{all:"age, sex, race/center, education, APOE ε4, SBP, antihypertensives, BMI, DM, HDL, LDL, smoking, CHD, HF, anticoagulants, LA volume index, LVEF, LV mass index.",s_wmh:"age, sex, race/center, education, APOE ε4, SBP, antihypertensives, BMI, DM, HDL, LDL, smoking, CHD, HF, anticoagulants, LA volume index, LVEF, LV mass index, ICV."},
+ tan:{all:"age, sex, HTN, DM, hyperlipidemia, smoking.",s_cog:"age, sex, education, BMI, CV risk-factor burden, LAVI, LVMI, LVEF."},
+ pradella:{all:"age, LAA peak velocity."},
+ masini:{all:"age, sex, race/center, smoking, DM, HTN, CHD, PAD, HF, LVEF, E/e′, incident AF (time-varying)."},
+ dehghan:{all:"age, sex, center, education, APOE ε4, income, ADI, BMI, eGFR, CAD, diabetes, stroke, AF, hypertension, depression, smoking, alcohol."}
+};
+const PMID={habibi:"31005519",dehghan:"41761847",rouch:"35082172",bianco:"35491988",potter:"34226217",cogswell:"28738140",karadag:"23685105",alosco:"23394115",russo13:"23473112",cermakova:"29246962",yaghi:"30158157",zhang:"31766970",mannina:"33011124",wang22:"35315884",casanova:"36114019",austin:"36250665",homssi:"38053799",ji:"38295860",liao:"39197404",ohlrogge:"39601872",wang25:"39569699",tan:"40194978",pradella:"38490945",masini:"40052267"};
+S.splice(S.findIndex(s=>s.id==="bertelsen"),1);
+const OWN_MODEL="Model adjusted for age, sex, Hispanic/Latino heritage group, educational attainment, heart rate, BMI, systolic blood pressure, antihypertensive medication use, diabetes mellitus, smoking status, alcohol intake, LDL cholesterol, HDL cholesterol, triglycerides, lipid-lowering medication use, eGFR, LV end-diastolic mass index, LVEF and LV GLS, with mutual adjustment for the alternate LA measure.";
+S.unshift({id:"silvar",label:"Silva-R/Kizer 2026",own:true,
+ meta:{},
+ cells:{demo:["Age","Sex","Hispanic/Latino heritage group","Educational attainment"],
+  cvrisk:["Heart rate","BMI","Systolic blood pressure","Antihypertensive medication use","Diabetes mellitus","Smoking status","Alcohol intake","LDL cholesterol","HDL cholesterol","Triglycerides","Lipid-lowering medication use","eGFR"],
+  lv:["LV end-diastolic mass index","LV ejection fraction","LV global longitudinal strain"]},
+ result:{model:OWN_MODEL}});
+S.forEach((s,i)=>{s.label=s.label.replace(/\s*\(.*\)$/,"");s.ord=i});
+S.find(s=>s.id==="masini").result.model="Model B: age, sex, race/center, smoking, DM, HTN, CHD, PAD, HF, LVEF, E/e′ + incident AF (time-varying).";
+function stat(x){return x.st==="U"?"U":(x.t.some(r=>r.s!==0)?"A":"N")}
+const COVPART={
+ tan:{lv:{inc:"Cognitive-outcome models (Model C): LV mass index, LV ejection fraction",exc:"Infarct and WMH models (adjusted for age, sex, hypertension, diabetes, hyperlipidemia, smoking)"}},
+ mannina:{
+  demo:{inc:"WMH models: age",exc:"Silent brain infarct models (stepwise selection retained only LV GLS)"},
+  cvrisk:{inc:"WMH models: hypertension",exc:"Silent brain infarct models (stepwise selection retained only LV GLS)"},
+  lv:{inc:"Silent brain infarct models: LV GLS",exc:"WMH models (stepwise selection retained age and hypertension)"}}
+};
+const covState=(s,k)=>!s.cells[k]?0:(COVPART[s.id]&&COVPART[s.id][k]?1:2);
+const nOf=s=>parseInt(CTX[s.id].n.replace(/,/g,""));
+const cohortOf=s=>{const c=CTX[s.id];return c.cohort==="—"?c.setting:c.cohort};
+function glyph(st){
+  if(st==="A") return '<svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="var(--assoc)"/></svg>';
+  if(st==="M") return '<svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="6.2" fill="none" stroke="var(--mixed)" stroke-width="1.8"/><path d="M9 2.8a6.2 6.2 0 0 0 0 12.4z" fill="var(--mixed)"/></svg>';
+  if(st==="N") return '<svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="6.2" fill="none" stroke="var(--null)" stroke-width="1.8"/></svg>';
+  return '<svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="6.2" fill="none" stroke="var(--unadj)" stroke-width="1.8" stroke-dasharray="2.4 2.2"/></svg>';
+}
+document.getElementById("keys").innerHTML=["A","N","U"].map(s=>`<span class="k"><span class="g">${glyph(s)}</span>${ST[s]}</span>`).join("")+
+ '<span class="k">Blank = pair not tested</span><span class="k"><i class="dot on"></i>Covariate group in fully adjusted model</span><span class="k"><i class="dot half"></i>In some primary models only</span><span class="k"><b>Δ</b> includes change over follow-up</span>';
+
+const tbl=document.getElementById("pm");
+let sort={k:"study",dir:1};
+function cmp(a,b){
+  const k=sort.k,d=sort.dir,sa=S[a],sb=S[b];
+  if(k==="study") return d*(sa.ord-sb.ord);
+  if(k==="cohort") return d*cohortOf(sa).localeCompare(cohortOf(sb))||sa.ord-sb.ord;
+  if(k==="n") return d*(nOf(sa)-nOf(sb));
+  if(k==="age") return d*(CTX[sa.id].ageN-CTX[sb.id].ageN);
+  if(k==="inf"){const ia=CTX[sa.id].infN,ib=CTX[sb.id].infN;if(ia==null&&ib==null) return sa.ord-sb.ord;if(ia==null) return 1;if(ib==null) return -1;return d*(ia-ib);}
+  if(k.startsWith("cov_")){const c=k.slice(4);return d*(covState(sb,c)-covState(sa,c))||nOf(sb)-nOf(sa);}
+  const xa=P[sa.id]?.[k],xb=P[sb.id]?.[k];
+  if(!xa&&!xb) return sa.ord-sb.ord; if(!xa) return 1; if(!xb) return -1;
+  return d*(ORDER[stat(xa)]-ORDER[stat(xb)])||nOf(sb)-nOf(sa);
+}
+function sb(k,label,title){const on=sort.k===k;return `<button type="button" data-sort="${k}" aria-pressed="${on}" title="Sort by ${title||label.replace(/<br>/g,' ')}">${label} <span class="arr">${on?(sort.dir>0?'▲':'▼'):'↕'}</span></button>`}
+function render(){
+  const idx=S.map((s,i)=>i).filter(i=>!S[i].own).sort(cmp);
+  S.forEach((s,i)=>{if(s.own) idx.unshift(i)});
+  let h='<thead><tr><th class="study g3" rowspan="3" scope="col">'+sb("study","Study","study (chronological)")+'</th><th class="g1" colspan="4" scope="colgroup">Study context</th>'+
+    '<th class="g1 core" colspan="6" scope="colgroup">Primary Models</th><th class="g1" colspan="10" scope="colgroup">Other exposure–outcome pairs</th><th class="g1" colspan="4" scope="colgroup">Covariates</th></tr><tr>'+
+    '<th class="ctx g3" rowspan="2">'+sb("cohort","Cohort / setting")+'</th><th class="ctx g3" rowspan="2">'+sb("n","N","sample size")+'</th><th class="ctx g3" rowspan="2">'+sb("age","Mean age","mean age")+'</th><th class="ctx g3 last" rowspan="2">'+sb("inf","Infarct<br>prevalence","infarct prevalence")+'</th>';
+  G2.forEach(g=>{h+=`<th class="g2 ${g.cls}" colspan="${g.span}" scope="colgroup">${g.n}</th>`});
+  COV.forEach((c,j)=>{h+=`<th class="cvh g3${j?'':' first'}" rowspan="2" scope="col">${sb("cov_"+c.k,c.n,COVNAME[c.k])}</th>`});
+  h+='</tr><tr>';
+  PAIRS.forEach(p=>{h+=`<th class="g3${p.core?' core3':''}" scope="col">${sb(p.k,p.sub||p.out,p.ex+" → "+p.out)}</th>`});
+  h+='</tr></thead><tbody>';
+  idx.forEach(i=>{const s=S[i],c=CTX[s.id],pp=P[s.id]||{};
+    h+=`<tr class="row${s.own?' own':''}"><td class="study" tabindex="0" data-k="${i}|study">${s.label}</td><td class="ctx">${c.cohort==="—"?c.setting:c.cohort}</td><td class="ctx n">${c.n}</td><td class="ctx n"${c.ageT?` title="${c.ageT}"`:''}>${c.age}</td><td class="ctx n last"${c.infT?` title="${c.infT}"`:''}>${c.inf||''}</td>`;
+    PAIRS.forEach((p,j)=>{const x=pp[p.k];const gs=(j>0&&PAIRS[j-1].grp!==p.grp)?' gs':'';
+      const cls=`pc${p.core?' core':' oth'}${gs}`;
+      h+= x?`<td class="${cls}" tabindex="0" data-k="${i}|${p.k}" aria-label="${s.label}, ${p.ex} to ${p.out}: ${ST[stat(x)]}"><span class="g">${glyph(stat(x))}${x.tag?`<span class="tag">${x.tag}</span>`:''}</span></td>`
+           :`<td class="${cls}"></td>`});
+    COV.forEach((cv,j)=>{const cs=covState(s,cv.k),on=cs>0;
+      h+=on?`<td class="cv${j?'':' first'}" tabindex="0" data-k="${i}|cov_${cv.k}" aria-label="${s.label}: ${COVNAME[cv.k]} — ${cs===1?'included in some primary models':'included'}"><i class="dot ${cs===1?'half':'on'}"></i></td>`
+           :`<td class="cv${j?'':' first'}" aria-label="${s.label}: ${COVNAME[cv.k]} — not included"><i class="dot"></i></td>`});
+    h+='</tr>';});
+  tbl.innerHTML=h+'</tbody>';
+}
+render();
+tbl.addEventListener("click",ev=>{const b=ev.target.closest("button[data-sort]");if(!b) return;ev.stopPropagation();
+  const k=b.dataset.sort;sort=(sort.k===k)?{k,dir:-sort.dir}:{k,dir:1};hide(true);render();const nb=tbl.querySelector(`button[data-sort="${k}"]`);if(nb) nb.focus();});
+
+/* ---------- popover ---------- */
+const pop=document.getElementById("pop"),ph2=pop.querySelector("h2"),pk=pop.querySelector(".kk"),pb=pop.querySelector(".pb"),bar=pop.querySelector(".bar"),closeBtn=pop.querySelector("button");
+let pinned=null,current=null;
+const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+function content(key){
+  const [i,k]=key.split("|"),s=S[+i];
+  if(k==="study"&&s.own){const c=CTX[s.id];
+    bar.style.background="var(--navy)";ph2.textContent=s.label;pk.textContent="Study details · this study";
+    pb.innerHTML=`<dl><dt>Cohort</dt><dd>${esc(c.cohort)}</dd><dt>Sample size</dt><dd>${esc(c.n)}</dd><dt>Mean age</dt><dd>${esc(c.age)} y</dd><dt>Infarct prevalence</dt><dd>${esc(c.inf)}</dd><dt>Exposures</dt><dd>LA strain (per 1-SD lower) and LA minimum volume index (per 1-SD higher)</dd></dl>`;
+    return;}
+  if(k==="study"){const m=s.meta;
+    bar.style.background="var(--navy)";ph2.textContent=s.label;pk.innerHTML=`Study details · <a class="pmlink" href="https://pubmed.ncbi.nlm.nih.gov/${PMID[s.id]}/" target="_blank" rel="noopener">PubMed ${PMID[s.id]} ↗</a>`;
+    pb.innerHTML=`<p class="ttl">${esc(m.title)}</p><dl><dt>Authors</dt><dd>${esc(m.authors)}</dd><dt>Journal</dt><dd>${esc(m.journal)}</dd><dt>Parent study</dt><dd>${esc(m.parent)}</dd><dt>Design</dt><dd>${esc(m.design)}</dd><dt>Sample size</dt><dd>${esc(m.n)}</dd><dt>Mean age</dt><dd>${esc(m.age)}</dd><dt>Female</dt><dd>${esc(m.female)}</dd></dl><p style="margin:0">${esc(m.extra)}</p>`;
+    return;}
+  if(k.startsWith("cov_")){const ck=k.slice(4);
+    const part=COVPART[s.id]&&COVPART[s.id][ck];
+    bar.style.background="var(--blue)";ph2.textContent=`${s.label} — ${COVNAME[ck]}`;
+    if(part){pk.textContent="In some primary models only";
+      pb.innerHTML=`<table class="est"><tr><td class="sig">Included in</td><td style="white-space:normal;text-align:left">${esc(part.inc)}</td></tr><tr><td class="ns">Not included in</td><td class="ns" style="white-space:normal;text-align:left">${esc(part.exc)}</td></tr></table>`;return;}
+    pk.textContent="Covariates in the fully adjusted model";
+    pb.innerHTML="<ul>"+s.cells[ck].map(t=>`<li>${esc(t)}</li>`).join("")+"</ul>";return;}
+  const p=PAIRS.find(x=>x.k===k),x=P[s.id][k];
+  const st=stat(x);bar.style.background=STC[st];ph2.textContent=`${s.label} — ${p.ex} → ${p.out}`;
+  const nsig=x.t.filter(r=>r.s===1).length;
+  const nsig2=x.t.filter(r=>r.s!==0).length;pk.textContent=`${ST[st]} · fully adjusted · ${nsig2} of ${x.t.length} tests significant`;
+  let h='<table class="est">'+x.t.map(r=>{const c=r.s===1?'sig':r.s===-1?'opp':'ns';return `<tr><td class="${c}">${esc(r.t)}${r.s===-1?' <span class="opp">(opposite direction)</span>':''}</td><td class="${c}">${esc(r.v)}</td></tr>`}).join("")+'</table>';
+  if(x.note) h+=`<p class="note">${esc(x.note)}</p>`;
+  const pc=PCOV[s.id]&&(PCOV[s.id][k]||PCOV[s.id].all);
+  h+=`<div class="model">${pc?"Covariates: "+esc(pc):esc(s.result.model)}</div>`;
+  pb.innerHTML=h;
+}
+function place(el){
+  const r=el.getBoundingClientRect(),vw=innerWidth,vh=innerHeight,pw=pop.offsetWidth,phh=pop.offsetHeight,m=10;
+  let left=r.right+m,top=r.top+r.height/2-phh/2;
+  if(left+pw>vw-8){left=r.left-pw-m;}
+  if(left<8){left=Math.max(8,Math.min(vw-pw-8,r.left));top=r.bottom+m;if(top+phh>vh-8) top=r.top-phh-m;}
+  top=Math.max(8,Math.min(vh-phh-8,top));
+  pop.style.left=left+"px";pop.style.top=top+"px";
+}
+function show(el){if(current&&current!==el) current.classList.remove("active");current=el;el.classList.add("active");content(el.dataset.k);pop.classList.add("show");pop.scrollTop=0;place(el);}
+function hide(force){if(pinned&&!force) return;pop.classList.remove("show","pinned");if(current) current.classList.remove("active");current=null;pinned=null;}
+function pin(el){if(pinned===el){hide(true);return}pinned=null;show(el);pinned=el;pop.classList.add("pinned");place(el);}
+tbl.addEventListener("mouseover",ev=>{const el=ev.target.closest("[data-k]");if(!el||pinned) return;show(el)});
+tbl.addEventListener("mouseout",ev=>{const el=ev.target.closest("[data-k]");if(!el||pinned) return;const to=ev.relatedTarget;if(to&&(el.contains(to)||pop.contains(to))) return;hide()});
+pop.addEventListener("mouseleave",ev=>{if(!pinned&&!(ev.relatedTarget&&ev.relatedTarget.closest&&ev.relatedTarget.closest("[data-k]"))) hide()});
+tbl.addEventListener("click",ev=>{const el=ev.target.closest("[data-k]");if(el){ev.stopPropagation();pin(el)}});
+tbl.addEventListener("focusin",ev=>{const el=ev.target.closest("[data-k]");if(el&&!pinned) show(el)});
+tbl.addEventListener("focusout",ev=>{if(!pinned&&!(ev.relatedTarget&&ev.relatedTarget.closest&&ev.relatedTarget.closest("[data-k]"))) hide()});
+tbl.addEventListener("keydown",ev=>{const el=ev.target.closest("[data-k]");if(el&&(ev.key==="Enter"||ev.key===" ")){ev.preventDefault();pin(el)}});
+closeBtn.addEventListener("click",ev=>{ev.stopPropagation();const el=pinned;hide(true);if(el) el.focus()});
+document.addEventListener("click",ev=>{if(pinned&&!pop.contains(ev.target)) hide(true)});
+document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&pop.classList.contains("show")){const el=current;hide(true);if(el) el.focus()}});
+addEventListener("resize",()=>{if(current) place(current)});
+document.querySelector(".wrap").addEventListener("scroll",()=>{if(current) place(current)},{passive:true});
+addEventListener("scroll",()=>{if(current) place(current)},{passive:true});
+</script>
+</body>
+</html>
