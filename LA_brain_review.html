@@ -207,7 +207,7 @@ tr.flashrow td.study{background:color-mix(in srgb,var(--mixed) 18%,var(--surface
 <div class="wrap"><table class="pm" id="pm"></table></div>
 <div class="notes">
   <p><b>Associated</b>: at least one test of that pair in the most-adjusted model was significant (p&lt;0.05). <b>Null</b>: no test in the most-adjusted model was significant. <b>Unadjusted</b>: only unadjusted comparisons were reported. <b>Not retained (stepwise)</b>: the LA measure was a candidate but was dropped by stepwise selection, so no estimate was reported. A “test” is each LA measure × outcome definition the paper reported in its most-adjusted model; the hover card lists every test, with significant ones in bold.</p>
-  <p>Infarct (primary models) is MRI-detected: silent infarcts, lacunes, cortical infarcts, microinfarcts, and acute infarct volume in stroke patients (Homssi). Clinical stroke is adjudicated ischemic stroke (incident, plus TIA in Habibi; prevalent prior stroke in Bianco; recurrent stroke in Yaghi 2015; stroke at presentation and incident stroke in Trueick). WMH includes WMH volume or load, white matter grade, Fazekas and ARWMC scores, and abnormal white matter volume. Cognition is neuropsychological test performance; <b>Δ</b> marks studies that also tested change over follow-up. Dementia is adjudicated incident dementia. DWI covers diffusion measures (fractional anisotropy, free water).</p>
+  <p>Infarct is MRI-detected: silent infarcts, lacunes, cortical infarcts, microinfarcts, and acute infarct volume in stroke patients (Homssi). Clinical stroke is adjudicated ischemic stroke (incident, plus TIA in Habibi; prevalent prior stroke in Bianco; recurrent stroke in Yaghi 2015; stroke at presentation and incident stroke in Trueick). WMH includes WMH volume or load, white matter grade, Fazekas and ARWMC scores, and abnormal white matter volume. Cognition is neuropsychological test performance; <b>Δ</b> marks studies that also tested change over follow-up. Dementia is adjudicated incident dementia. DWI covers diffusion measures (fractional anisotropy, free water).</p>
   <p>Mean age is in years (± SD). Infarct prevalence is the share of the analysed sample with ≥1 MRI-detected infarct, shown only for studies with an infarct outcome; Tan shows lacunes, Johansen shows lacunar infarcts (cortical 10%; overall not reported), Homssi enrolled only acute stroke patients, and Barnes, Masini, Maheshwari and Mannina 2023 show incident clinical ischemic stroke over follow-up (Yaghi 2015 shows recurrent ischemic stroke among first-stroke patients; Trueick shows incident stroke in a suspected-stroke cohort). Hover a value for its definition.</p>
 </div>
 </div>
@@ -934,7 +934,7 @@ function glyph(st){
   return '<svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="6.2" fill="none" stroke="var(--unadj)" stroke-width="1.8" stroke-dasharray="2.4 2.2"/></svg>';
 }
 document.getElementById("keys").innerHTML=["A","N","U","R"].map(s=>`<span class="k"><span class="g">${glyph(s)}</span>${ST[s]}</span>`).join("")+
- '<span class="k">Blank = pair not tested</span><span class="k"><i class="dot on"></i>Covariate group in the most-adjusted model</span><span class="k"><i class="dot half"></i>In some primary models only</span><span class="k"><b>Δ</b> includes change over follow-up</span>';
+ '<span class="k">Blank = pair not tested</span><span class="k"><i class="dot on"></i>Covariate group in the most-adjusted model</span><span class="k"><i class="dot half"></i>In some models only</span><span class="k"><b>Δ</b> includes change over follow-up</span>';
 
 const tbl=document.getElementById("pm");
 let sort={k:"study",dir:1};
@@ -955,7 +955,7 @@ function render(){
   const idx=S.map((s,i)=>i).filter(i=>!S[i].own).sort(cmp);
   S.forEach((s,i)=>{if(s.own) idx.unshift(i)});
   let h='<thead><tr><th class="study g3" rowspan="3" scope="col">'+sb("study","Study","study (chronological)")+'</th><th class="g1" colspan="4" scope="colgroup">Study context</th>'+
-    '<th class="g1 core" colspan="6" scope="colgroup">Primary Models</th><th class="g1" colspan="10" scope="colgroup">Other exposure–outcome pairs</th><th class="g1" colspan="4" scope="colgroup">Covariates</th></tr><tr>'+
+    '<th class="g1 core" colspan="6" scope="colgroup">Models of Interest</th><th class="g1" colspan="10" scope="colgroup">Other exposure–outcome pairs</th><th class="g1" colspan="4" scope="colgroup">Covariates</th></tr><tr>'+
     '<th class="ctx g3" rowspan="2">'+sb("cohort","Cohort / setting")+'</th><th class="ctx g3" rowspan="2">'+sb("n","N","sample size")+'</th><th class="ctx g3" rowspan="2">'+sb("age","Mean age","mean age")+'</th><th class="ctx g3 last" rowspan="2">'+sb("inf","Infarct<br>prevalence","infarct prevalence")+'</th>';
   G2.forEach(g=>{h+=`<th class="g2 ${g.cls}" colspan="${g.span}" scope="colgroup">${g.n}</th>`});
   COV.forEach((c,j)=>{h+=`<th class="cvh g3${j?'':' first'}" rowspan="2" scope="col">${sb("cov_"+c.k,c.n,COVNAME[c.k])}</th>`});
